@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ADHD Bingo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f2f4f8;
+  --surface:   #ffffff;
+  --blue:      #7eb8f7;
+  --blue-dk:   #4a90d9;
+  --blue-lt:   #e8f3fe;
+  --green:     #7dcfaa;
+  --green-dk:  #4aaa80;
+  --green-lt:  #e4f7ef;
+  --amber:     #f7c97e;
+  --amber-dk:  #e0a030;
+  --amber-lt:  #fef6e4;
+  --purple:    #b39ddb;
+  --purple-lt: #f0ebfa;
+  --pink:      #f48fb1;
+  --pink-lt:   #fde8ef;
+  --coral:     #f4967e;
+  --coral-lt:  #fdeee9;
+  --text:      #2d3142;
+  --text-mid:  #6b7280;
+  --text-lt:   #a8b0bc;
+  --shadow:    0 2px 14px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+body {
+  background: var(--bg);
+  font-family: "Nunito", "Noto Sans SC", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 60px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ── */
+.header {
+  width: 100%; max-width: 400px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+  opacity: 0; animation: up .45s ease forwards;
+}
+.header-left .title {
+  font-size: 1.55rem; font-weight: 900;
+  font-family: "PingFang SC","苹方","Noto Sans SC","Microsoft YaHei",sans-serif;
+  color: var(--text); letter-spacing: 0.02em;
+}
+.header-left .date {
+  font-size: 0.73rem; font-weight: 600;
+  color: var(--text-lt); margin-top: 2px;
+}
+.header-right { display: flex; gap: 8px; align-items: center; }
+.btn-history {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--surface);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; box-shadow: var(--shadow);
+  transition: transform 0.2s;
+}
+.btn-history:hover { transform: scale(1.08); }
+
+/* ── Progress card ── */
+.progress-card {
+  width: 100%; max-width: 400px;
+  background: var(--surface); border-radius: 20px;
+  padding: 18px 20px; margin-bottom: 14px;
+  box-shadow: var(--shadow);
+  opacity: 0; animation: up .45s .07s ease forwards;
+}
+.progress-card-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.progress-card-title { font-size: 1rem; font-weight: 900; color: var(--text); }
+.progress-card-sub { font-size: 0.72rem; font-weight: 600; color: var(--text-lt); margin-top: 2px; }
+.ring-wrap { position: relative; width: 60px; height: 60px; flex-shrink: 0; }
+.ring-wrap svg { transform: rotate(-90deg); display: block; }
+.ring-bg   { fill: none; stroke: var(--purple-lt); stroke-width: 5; }
+.ring-fill {
+  fill: none; stroke: var(--purple); stroke-width: 5; stroke-linecap: round;
+  transition: stroke-dashoffset .65s cubic-bezier(.4,0,.2,1);
+}
+.ring-label {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 900; color: var(--purple);
+}
+.progress-bar-bg { height: 8px; background: var(--purple-lt); border-radius: 99px; overflow: hidden; }
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c3b1e1, var(--blue), var(--green));
+  border-radius: 99px; transition: width .65s cubic-bezier(.4,0,.2,1); width: 0%;
+}
+.progress-hint { font-size: 0.7rem; font-weight: 700; color: var(--text-mid); margin-top: 8px; min-height: 1.3em; }
+
+/* ── Badge ── */
+.badge-row {
+  width: 100%; max-width: 400px; min-height: 34px;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  opacity: 0; animation: up .45s .12s ease forwards;
+}
+.badge {
+  display: none; align-items: center; gap: 5px;
+  background: var(--amber-lt); border: 1.5px solid #f7d99a;
+  border-radius: 99px; padding: 5px 13px;
+  font-size: 0.73rem; font-weight: 800; color: var(--amber-dk);
+}
+.badge.show { display: flex; }
+
+/* ── Grid ── */
+.grid-card {
+  width: 100%; max-width: 400px;
+  background: var(--surface); border-radius: 20px;
+  padding: 14px; box-shadow: var(--shadow);
+  opacity: 0; animation: up .45s .17s ease forwards;
+}
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.cell {
+  aspect-ratio: 1/1; background: var(--bg); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  font-family: "PingFang SC","苹方","Noto Sans SC",sans-serif;
+  font-size: 0.72rem; font-weight: 700; line-height: 1.25;
+  padding: 3px; cursor: pointer; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border: 2px solid transparent;
+  transition: all 0.2s cubic-bezier(.4,0,.2,1);
+  word-break: break-all; color: var(--text-mid); position: relative;
+}
+.cell:hover { transform: translateY(-1px); }
+.cell:active { transform: scale(0.9); }
+.cell.active { background: var(--blue); color: #fff; border-color: var(--blue-dk); box-shadow: 0 4px 12px rgba(126,184,247,0.45); }
+.cell.active::after { content:'✓'; position:absolute; top:2px; right:4px; font-size:0.5rem; opacity:0.75; }
+.cell.bingo-line { background: var(--green); color: #fff; border-color: var(--green-dk); box-shadow: 0 4px 14px rgba(125,207,170,0.45); }
+.cell.bingo-line::after { content:'★'; position:absolute; top:2px; right:3px; font-size:0.48rem; opacity:0.85; }
+
+/* ── Buttons ── */
+.bottom {
+  width: 100%; max-width: 400px; display: flex; gap: 10px; margin-top: 14px;
+  opacity: 0; animation: up .45s .22s ease forwards;
+}
+.btn {
+  flex: 1; padding: 14px 10px; border-radius: 14px; border: none;
+  font-family: "Nunito","Noto Sans SC",sans-serif;
+  font-size: 0.82rem; font-weight: 800; cursor: pointer;
+  transition: all 0.18s; -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.96); }
+.btn-shuffle { background: var(--blue-lt); color: var(--blue-dk); }
+.btn-shuffle:hover { background: #d4e9fc; }
+.btn-reset { background: var(--coral-lt); color: #c05040; }
+.btn-reset:hover { background: #faddcf; }
+
+/* ── History drawer ── */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+.drawer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface); border-radius: 24px 24px 0 0;
+  padding: 0 0 40px;
+  z-index: 201; transform: translateY(100%);
+  transition: transform 0.38s cubic-bezier(.4,0,.2,1);
+  max-height: 80vh; display: flex; flex-direction: column;
+}
+.drawer.open { transform: translateY(0); }
+
+.drawer-handle {
+  width: 40px; height: 4px; background: var(--text-lt);
+  border-radius: 99px; margin: 14px auto 0;
+}
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+.drawer-title { font-size: 1rem; font-weight: 900; color: var(--text); }
+.drawer-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg); border: none; cursor: pointer;
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  color: var(--text-mid);
+}
+
+.history-list {
+  overflow-y: auto; padding: 0 16px;
+  flex: 1;
+}
+.history-empty {
+  text-align: center; padding: 40px 20px;
+  font-size: 0.85rem; color: var(--text-lt); font-weight: 600;
+}
+
+.history-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; margin-bottom: 8px;
+  background: var(--bg); border-radius: 14px;
+}
+.history-date-block { flex-shrink: 0; text-align: center; }
+.history-month { font-size: 0.6rem; font-weight: 800; color: var(--text-lt); text-transform: uppercase; letter-spacing: 0.05em; }
+.history-day { font-size: 1.4rem; font-weight: 900; color: var(--text); line-height: 1; }
+.history-weekday { font-size: 0.6rem; font-weight: 700; color: var(--text-lt); }
+.history-info { flex: 1; }
+.history-pct { font-size: 0.85rem; font-weight: 900; color: var(--text); }
+.history-sub { font-size: 0.68rem; font-weight: 600; color: var(--text-mid); margin-top: 2px; }
+.history-bar-bg { height: 5px; background: var(--purple-lt); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+.history-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--blue)); }
+.history-bingo { flex-shrink: 0; background: var(--amber-lt); border-radius: 99px; padding: 3px 10px; font-size: 0.65rem; font-weight: 800; color: var(--amber-dk); display: none; }
+.history-bingo.show { display: block; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: var(--text); color: #fff;
+  padding: 12px 26px; border-radius: 99px;
+  font-size: 0.82rem; font-weight: 800;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+  transition: transform .36s cubic-bezier(.4,0,.2,1), opacity .36s;
+  z-index: 300; white-space: nowrap; opacity: 0;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+#confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+@keyframes up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.2); }
+  70%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop 0.26s ease; }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<div class="toast" id="toast"></div>
+
+<!-- History Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeHistory()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div class="drawer-title">📅 历史记录</div>
+    <button class="drawer-close" onclick="closeHistory()">✕</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="title">ADHD Bingo</div>
+    <div class="date" id="dateDisplay"></div>
+  </div>
+    <div class="header-right">
+      <button class="btn-history" onclick="openHistory()" title="历史记录">📅</button>
+    </div>
+</div>
+
+<!-- Progress Card -->
+<div class="progress-card">
+  <div class="progress-card-header">
+    <div>
+      <div class="progress-card-title">今日完成进度</div>
+      <div class="progress-card-sub" id="progressSub">完成一项 +20%，连成一线即 100%</div>
+    </div>
+    <div class="ring-wrap">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle class="ring-bg"   cx="30" cy="30" r="25"/>
+        <circle class="ring-fill" id="ringFill" cx="30" cy="30" r="25"
+          stroke-dasharray="157.08" stroke-dashoffset="157.08"/>
+      </svg>
+      <div class="ring-label" id="ringLabel">0%</div>
+    </div>
+  </div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+  <div class="progress-hint" id="progressHint"></div>
+</div>
+
+<!-- Badge -->
+<div class="badge-row">
+  <div class="badge" id="bingoBadge">🎯 <span id="badgeText"></span></div>
+</div>
+
+<!-- Grid -->
+<div class="grid-card">
+  <div class="grid" id="bingoGrid"></div>
+</div>
+
+<!-- Buttons -->
+<div class="bottom">
+  <button class="btn btn-shuffle" onclick="shuffle()">🔀 随机排列</button>
+  <button class="btn btn-reset"   onclick="resetAll()">↺ 重置</button>
+</div>
+
+<script>
+const TASKS = [
+  "日语","法语","无氧","有氧","健身环",
+  "跳舞","拳击","拉伸","看书","听播客",
+  "看剧","看电影","打游戏","洗头","吃补剂",
+  "倒垃圾","捡垃圾","洗碗","拖地","收衣服",
+  "好睡眠","写手帐","写公众号","断舍离","采购食材"
+];
+
+const PALETTES = [
+  { bg: '#e8f3fe', color: '#4a90d9' },
+  { bg: '#e4f7ef', color: '#4aaa80' },
+  { bg: '#fef6e4', color: '#c8882a' },
+  { bg: '#f0ebfa', color: '#7b5ea7' },
+  { bg: '#fde8ef', color: '#c0607a' },
+  { bg: '#fdeee9', color: '#c06040' },
+];
+
+const SIZE = 5;
+const CIRC = 157.08;
+const STORE_PREFIX = 'adhd_bingo_';
+
+let state = Array(25).fill(false);
+let order = [...Array(25).keys()];
+let prevLines = 0;
+
+function todayKey() {
+  return STORE_PREFIX + new Date().toISOString().slice(0, 10);
+}
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+function load() {
+  try {
+    const s = localStorage.getItem(todayKey());
+    if (s) {
+      const d = JSON.parse(s);
+      if (Array.isArray(d.state)) state = d.state;
+      if (Array.isArray(d.order) && d.order.length === 25) order = d.order;
+    }
+  } catch(e) {}
+}
+
+function save() {
+  try {
+    const done  = state.filter(Boolean).length;
+    const lines = getLines().length;
+    const pct   = calcPct(done, lines);
+    localStorage.setItem(todayKey(), JSON.stringify({ state, order, done, lines, pct }));
+  } catch(e) {}
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function getAllHistory() {
+  const entries = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key.startsWith(STORE_PREFIX)) continue;
+    const dateStr = key.replace(STORE_PREFIX, '');
+    try {
+      const d = JSON.parse(localStorage.getItem(key));
+      entries.push({ dateStr, ...d });
+    } catch(e) {}
+  }
+  return entries.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+}
+
+function openHistory() {
+  const entries = getAllHistory();
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="history-empty">还没有记录<br>今天完成第一项就会自动保存 ✨</div>';
+  } else {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    entries.forEach(e => {
+      const date = new Date(e.dateStr + 'T12:00:00');
+      const isToday = e.dateStr === new Date().toISOString().slice(0,10);
+      const done  = e.done  ?? (e.state ? e.state.filter(Boolean).length : 0);
+      const lines = e.lines ?? 0;
+      const pct   = e.pct   ?? Math.min(done * 20, 100);
+      const visual = Math.min(pct, 100);
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="history-date-block">
+          <div class="history-month">${isToday ? '今天' : months[date.getMonth()]}</div>
+          <div class="history-day">${date.getDate()}</div>
+          <div class="history-weekday">${weekdays[date.getDay()]}</div>
+        </div>
+        <div class="history-info">
+          <div class="history-pct">${pct}% 完成</div>
+          <div class="history-sub">勾选了 ${done} 项任务${lines > 0 ? ` · ${lines} 条连线` : ''}</div>
+          <div class="history-bar-bg">
+            <div class="history-bar-fill" style="width:${visual}%"></div>
+          </div>
+        </div>
+        <div class="history-bingo ${lines > 0 ? 'show' : ''}">BINGO</div>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeHistory() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// ── Grid ──────────────────────────────────────────────────────────────────────
+function buildGrid() {
+  const g = document.getElementById('bingoGrid');
+  g.innerHTML = '';
+  order.forEach((taskIdx, pos) => {
+    const pal = PALETTES[pos % PALETTES.length];
+    const c = document.createElement('div');
+    c.className = 'cell' + (state[pos] ? ' active' : '');
+    c.dataset.i   = pos;
+    c.dataset.bg  = pal.bg;
+    c.dataset.fg  = pal.color;
+    c.textContent = TASKS[taskIdx];
+    if (!state[pos]) { c.style.background = pal.bg; c.style.color = pal.color; }
+    c.onclick = () => toggle(pos);
+    g.appendChild(c);
+  });
+}
+
+function toggle(pos) {
+  state[pos] = !state[pos];
+  save();
+  const c = document.querySelector(`.cell[data-i="${pos}"]`);
+  c.classList.toggle('active', state[pos]);
+  if (!state[pos]) { c.style.background = c.dataset.bg; c.style.color = c.dataset.fg; }
+  else             { c.style.background = ''; c.style.color = ''; }
+  c.classList.remove('pop');
+  void c.offsetWidth;
+  c.classList.add('pop');
+  c.addEventListener('animationend', () => c.classList.remove('pop'), { once: true });
+  render();
+}
+
+// ── Logic ─────────────────────────────────────────────────────────────────────
+function getLines() {
+  const lines = [];
+  for (let r = 0; r < SIZE; r++) {
+    const row = Array.from({length:SIZE},(_,c)=>r*SIZE+c);
+    if (row.every(i=>state[i])) lines.push(row);
+  }
+  for (let c = 0; c < SIZE; c++) {
+    const col = Array.from({length:SIZE},(_,r)=>r*SIZE+c);
+    if (col.every(i=>state[i])) lines.push(col);
+  }
+  const d1 = Array.from({length:SIZE},(_,i)=>i*SIZE+i);
+  const d2 = Array.from({length:SIZE},(_,i)=>i*SIZE+(SIZE-1-i));
+  if (d1.every(i=>state[i])) lines.push(d1);
+  if (d2.every(i=>state[i])) lines.push(d2);
+  return lines;
+}
+
+function calcPct(done, lineCount) {
+  if (lineCount > 0) return 100 + Math.max(0, done - 5) * 20;
+  return Math.min(done * 20, 100);
+}
+
+const SUBS = [
+  "完成一项 +20%，连成一线即 100%",
+  "好的开始，继续加油 💪",
+  "状态不错，保持节奏",
+  "已完成超过一半了！",
+  "快到终点了，冲！",
+  "还差一步就连线了",
+  "Bingo！继续超越 🎉"
+];
+
+function render() {
+  const done  = state.filter(Boolean).length;
+  const lines = getLines();
+  const n     = lines.length;
+  const pct   = calcPct(done, n);
+  const visual = Math.min(pct, 100);
+
+  document.getElementById('ringFill').style.strokeDashoffset = CIRC * (1 - visual / 100);
+  document.getElementById('ringLabel').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = visual + '%';
+
+  const subIdx = n > 0 ? 6 : Math.min(Math.floor(done/5), 5);
+  document.getElementById('progressSub').textContent = SUBS[subIdx];
+
+  const hint = document.getElementById('progressHint');
+  if (n > 0 && done > 5) {
+    hint.textContent = `已额外完成 ${done-5} 项 · 总计 ${done} 项`;
+    hint.style.color = 'var(--green-dk)';
+  } else if (n === 0 && done > 0) {
+    hint.textContent = `已完成 ${done} 项`;
+    hint.style.color = 'var(--blue-dk)';
+  } else {
+    hint.textContent = '';
+  }
+
+  const allIdx = new Set(lines.flat());
+  document.querySelectorAll('.cell').forEach(c => {
+    c.classList.remove('bingo-line');
+    if (!state[+c.dataset.i]) { c.style.background = c.dataset.bg; c.style.color = c.dataset.fg; }
+  });
+  allIdx.forEach(i => {
+    const c = document.querySelector(`.cell[data-i="${i}"]`);
+    if (c) { c.classList.add('bingo-line'); c.style.background=''; c.style.color=''; }
+  });
+
+  const badge = document.getElementById('bingoBadge');
+  document.getElementById('badgeText').textContent = `连成 ${n} 条线！`;
+  badge.classList.toggle('show', n > 0);
+
+  if (n > prevLines) { doConfetti(); showToast('🎉 BINGO！'); }
+  prevLines = n;
+}
+
+function shuffle() {
+  for (let i = order.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [order[i],order[j]] = [order[j],order[i]];
+  }
+  state = Array(25).fill(false);
+  prevLines = 0;
+  save(); buildGrid(); render();
+  showToast('已随机排列 🔀');
+}
+
+function resetAll() {
+  state = Array(25).fill(false);
+  prevLines = 0;
+  save(); buildGrid(); render();
+  showToast('已重置');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Confetti ──────────────────────────────────────────────────────────────────
+function doConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const colors = ['#7eb8f7','#7dcfaa','#f7c97e','#f48fb1','#b39ddb','#f4967e'];
+  const ps = Array.from({length:65}, () => ({
+    x: Math.random()*canvas.width, y: -15-Math.random()*80,
+    w: 6+Math.random()*6, h: 3+Math.random()*4,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    vx: (Math.random()-.5)*4, vy: 2.5+Math.random()*3.5,
+    rot: Math.random()*360, vrot: (Math.random()-.5)*8, alpha: 1,
+  }));
+  let f = 0;
+  (function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive = false;
+    ps.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vrot; p.vy+=0.08;
+      if (f>55) p.alpha = Math.max(0, p.alpha-0.014);
+      if (p.y<canvas.height+20 && p.alpha>0) alive=true;
+      ctx.save(); ctx.globalAlpha=p.alpha;
+      ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    f++;
+    if (alive && f<200) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  })();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const now = new Date();
+const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+document.getElementById('dateDisplay').textContent =
+  `${now.getFullYear()} · ${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} · ${days[now.getDay()]}`;
+
+load(); buildGrid(); render();
+</script>
+</body>
+</html>
