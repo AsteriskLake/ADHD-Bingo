@@ -128,13 +128,6 @@ body {
   border: 2px solid transparent;
   transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
   word-break: break-all; color: var(--text-mid); position: relative; overflow: hidden;
-/* 关键：禁用长按弹出系统菜单 */
-  -webkit-touch-callout: none; 
-  /* 关键：禁用系统自动选择文字 */
-  -webkit-user-select: none;   
-  user-select: none;
-  /* 关键：告诉浏览器不要接管手势（防止滚动干扰） */
-  touch-action: manipulation;
 }
 .cell:hover { transform: translateY(-1px); }
 .cell:active { transform: scale(0.92); }
@@ -730,18 +723,7 @@ function buildGrid(){
     c.addEventListener('mousedown',  ()=>startPress(pos,c));
     c.addEventListener('mouseup',    ()=>cancelPress(c));
     c.addEventListener('mouseleave', ()=>cancelPress(c));
-c.addEventListener('touchstart', (e) => {
-    // 只有在没有进行长按逻辑时才阻止默认动作，或者全量阻止以接管手势
-    if (e.cancelable) e.preventDefault(); 
-    startPress(pos, c);
-}, { passive: false });
-
-// 另外，在 cancelPress 逻辑中，确保清除状态
-function cancelPress(el) {
-    clearTimeout(pressTimer);
-    pressTimer = null;
-    el.classList.remove('pressing');
-}
+    c.addEventListener('touchstart', (e)=>{ e.preventDefault(); startPress(pos,c); },{passive:false});
     c.addEventListener('touchend',   ()=>{ cancelPress(c); if(!didLongPress) toggle(pos); });
     c.addEventListener('touchmove',  ()=>cancelPress(c));
     c.onclick = ()=>{ if(!didLongPress) toggle(pos); };
@@ -851,10 +833,3 @@ load(); loadCustomTasks(); loadDetails(); loadMandatory(); loadAppName(); buildG
 </script>
 </body>
 </html>
-
-// 在 buildGrid 函数生成的 cell 元素上添加：
-c.oncontextmenu = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-};
