@@ -755,7 +755,7 @@ function allAchievements(){return [...DEFAULT_ACHIEVEMENTS,...achUserDefined];}
 let groups=[{name:'默认分组', tasks: DEFAULT_TASKS.slice(0,25).map(n=>({name:n,active:true}))}];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const todayStr=()=>new Date().toISOString().slice(0,10);
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const activeDate=()=>viewingDate||todayStr();
 const ls={
   get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},
@@ -1019,8 +1019,46 @@ function updateViewingUI(){
 
 // ── Grid size ─────────────────────────────────────────────────────────────────
 function setSize(n){
+  // Collect done task names from current grid
+  const doneNames=new Set();
+  for(let pos=0;pos<state.length;pos++){
+    if(state[pos]){const name=getTaskName(pos);if(name)doneNames.add(name);}
+  }
+  // Block if shrinking would lose completed tasks
+  if(n*n<doneNames.size){
+    showToast(`⚠️ 已完成 ${doneNames.size} 个任务，无法缩小到 ${n}×${n}（${n*n} 格）`);
+    return;
+  }
+  const oldSize=gridSize;
   gridSize=n;ls.set(K.size,n);
-  state=Array(totalCells()).fill(false);order=[...Array(totalCells()).keys()];
+  const activeTasks=getActiveTasks();
+  const allIdxs=[...Array(activeTasks.length).keys()];
+
+  let newOrder;
+  if(n*n>=oldSize*oldSize){
+    // Expanding: keep existing order, append new indices at the end
+    const usedSet=new Set(order);
+    const extra=allIdxs.filter(i=>!usedSet.has(i));
+    newOrder=[...order,...extra];
+  } else {
+    // Shrinking: put done tasks first (guarantee they fit), then others
+    const doneIdxs=[], otherIdxs=[];
+    for(let i=0;i<activeTasks.length;i++){
+      (doneNames.has(activeTasks[i])?doneIdxs:otherIdxs).push(i);
+    }
+    newOrder=[...doneIdxs,...otherIdxs];
+  }
+  // Pad with any remaining unused indices, then trim to n*n
+  const usedSet=new Set(newOrder);
+  for(let i=0;newOrder.length<totalCells();i++){if(!usedSet.has(i)){newOrder.push(i);usedSet.add(i);}}
+  order=newOrder.slice(0,totalCells());
+
+  // Rebuild state by task name
+  state=Array(totalCells()).fill(false);
+  for(let pos=0;pos<totalCells();pos++){
+    const idx=order[pos];
+    if(idx<activeTasks.length&&doneNames.has(activeTasks[idx]))state[pos]=true;
+  }
   prevLines=0;updateSizeBtns();save();buildGrid();render();
 }
 function updateSizeBtns(){
