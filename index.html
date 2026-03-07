@@ -480,7 +480,7 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 <div class="task-panel-overlay" id="taskOverlay" onclick="closeTaskPanel()"></div>
 <div class="task-panel" id="taskPanel">
   <div class="task-panel-header">
-    <div><div class="task-panel-title">📋 任务列表</div><div class="task-panel-sub">点击选择 · 拖动排序 · 点 ✕ 删除</div></div>
+    <div><div class="task-panel-title">📋 任务列表</div><div class="task-panel-sub">点击选择 · 拖动排序 · 长按更多操作</div></div>
     <button class="task-panel-close" onclick="closeTaskPanel()">✕</button>
   </div>
   <div class="task-panel-actions">
@@ -1222,6 +1222,27 @@ function _installPanelTouchHandler(){
   const pb=document.getElementById('taskPanelBody');
   if(!pb||pb._touchInstalled)return;
   pb._touchInstalled=true;
+
+  // ── Mouse long-press (desktop) ──
+  let _mouseLpTimer=null,_mouseMoved=false,_mouseGi=-1,_mouseTi=-1;
+  pb.addEventListener('mousedown',ev=>{
+    if(ev.button!==0)return;
+    const bel=ev.target.closest('.task-bubble');
+    if(!bel)return;
+    _mouseGi=+bel.dataset.gi;_mouseTi=+bel.dataset.ti;
+    _mouseMoved=false;
+    clearTimeout(_mouseLpTimer);
+    _mouseLpTimer=setTimeout(()=>{
+      _mouseLpTimer=null;
+      if(!_mouseMoved&&_mouseGi>=0&&_mouseTi>=0&&groups[_mouseGi]&&groups[_mouseGi].tasks[_mouseTi]){
+        showBubbleMenu(_mouseGi,_mouseTi);
+      }
+      _mouseGi=-1;_mouseTi=-1;
+    },500);
+  });
+  pb.addEventListener('mousemove',()=>{_mouseMoved=true;clearTimeout(_mouseLpTimer);_mouseLpTimer=null;});
+  pb.addEventListener('mouseup',()=>{clearTimeout(_mouseLpTimer);_mouseLpTimer=null;});
+  pb.addEventListener('mouseleave',()=>{clearTimeout(_mouseLpTimer);_mouseLpTimer=null;});
 
   pb.addEventListener('touchstart',ev=>{
     const touch=ev.touches[0];
