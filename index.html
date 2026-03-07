@@ -149,9 +149,39 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .task-bubble.active-bubble{background:var(--done);color:#fff;border-color:var(--done-dk);}
 .task-bubble.dragging-bubble{opacity:.45;transform:scale(.92);cursor:grabbing;}
 .task-bubble.drag-over-bubble{border-color:var(--purple);background:var(--purple-lt);}
+.task-bubble.has-schedule{padding-right:8px;}
 .group-drag-target{outline:2px dashed var(--purple)!important;border-radius:10px;background:var(--purple-lt)!important;}
+/* Schedule indicator dot on bubble */
+.bubble-sched-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);border:1.5px solid #fff;flex-shrink:0;margin-left:-2px;}
+.task-bubble.active-bubble .bubble-sched-dot{background:#fff;border-color:rgba(255,255,255,.5);}
+/* Schedule edit button on bubble */
+.bubble-sched-btn{width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.13);cursor:pointer;color:inherit;font-size:.55rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+.bubble-sched-btn:hover,.bubble-sched-btn:active{background:rgba(0,0,0,.28);}
 .bubble-del{width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.15);cursor:pointer;color:inherit;font-size:.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1;transition:background .15s;-webkit-tap-highlight-color:transparent;}
 .bubble-del:hover,.bubble-del:active{background:rgba(0,0,0,.32);}
+
+/* Schedule sheet */
+#schedSheet{z-index:206;}#schedOverlay{z-index:205;}
+.sched-body{overflow-y:auto;padding:0 16px 32px;flex:1;}
+.sched-section-label{font-size:.7rem;font-weight:800;color:var(--text-lt);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 8px;}
+/* Weekday picker */
+.weekday-row{display:flex;gap:6px;justify-content:space-between;}
+.wd-btn{flex:1;aspect-ratio:1/1;border-radius:10px;border:2px solid transparent;background:var(--bg);font-size:.78rem;font-weight:800;color:var(--text-mid);cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;}
+.wd-btn.sel{background:var(--amber);color:#fff;border-color:var(--amber-dk);}
+/* Scheduled dates list */
+.sched-dates-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.sched-date-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:10px;padding:9px 12px;}
+.sched-date-label{font-size:.85rem;font-weight:700;color:var(--text);}
+.sched-date-del{width:24px;height:24px;border-radius:50%;border:none;background:transparent;cursor:pointer;color:var(--text-lt);font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.sched-date-del:hover{background:var(--coral-lt);color:var(--coral);}
+.sched-add-row{display:flex;gap:8px;margin-top:4px;}
+.sched-date-input{flex:1;padding:9px 12px;background:var(--bg);border:2px solid transparent;border-radius:10px;outline:none;font-family:"Noto Sans SC",sans-serif;font-size:.85rem;color:var(--text);transition:border-color .2s;-webkit-appearance:none;}
+.sched-date-input:focus{border-color:var(--amber);}
+.sched-add-btn{width:36px;height:36px;border-radius:10px;border:none;background:var(--amber);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sched-save-btn{width:100%;padding:13px;border-radius:14px;border:none;background:var(--amber);color:#fff;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-top:16px;}
+.sched-clear-btn{width:100%;padding:10px;border-radius:14px;border:none;background:var(--bg);color:var(--text-mid);font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.82rem;font-weight:800;cursor:pointer;margin-top:8px;}
+/* Today-only badge on bubble */
+.bubble-today-badge{font-size:.55rem;font-weight:900;background:var(--amber);color:#fff;border-radius:4px;padding:1px 4px;margin-left:1px;vertical-align:middle;}
 /* Trash drop zone */
 .task-trash-zone{display:none;align-items:center;justify-content:center;gap:8px;margin:12px 0 4px;padding:12px;border-radius:14px;border:2px dashed var(--text-lt);color:var(--text-lt);font-size:.82rem;font-weight:800;transition:all .25s;background:transparent;cursor:default;}
 .task-trash-zone.visible{display:flex;}
@@ -539,6 +569,36 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
   <div class="journal-body" id="taskJournalBody"></div>
 </div>
 
+<!-- Schedule Edit Sheet -->
+<div class="overlay" id="schedOverlay" onclick="closeSchedSheet()"></div>
+<div class="sheet" id="schedSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div><div class="sheet-title" id="schedSheetTitle">📅 任务计划</div><div class="task-panel-sub" id="schedSheetSub"></div></div>
+    <button class="sheet-close" onclick="closeSchedSheet()">✕</button>
+  </div>
+  <div class="sched-body">
+    <div class="sched-section-label">🔁 每周重复</div>
+    <div class="weekday-row" id="weekdayRow">
+      <button class="wd-btn" data-wd="1">一</button>
+      <button class="wd-btn" data-wd="2">二</button>
+      <button class="wd-btn" data-wd="3">三</button>
+      <button class="wd-btn" data-wd="4">四</button>
+      <button class="wd-btn" data-wd="5">五</button>
+      <button class="wd-btn" data-wd="6">六</button>
+      <button class="wd-btn" data-wd="0">日</button>
+    </div>
+    <div class="sched-section-label">📌 指定日期出现</div>
+    <div class="sched-dates-list" id="schedDatesList"></div>
+    <div class="sched-add-row">
+      <input class="sched-date-input" type="date" id="schedDateInput"/>
+      <button class="sched-add-btn" onclick="schedAddDate()">+</button>
+    </div>
+    <button class="sched-save-btn" onclick="saveSchedSheet()">保存 ✓</button>
+    <button class="sched-clear-btn" onclick="clearSchedSheet()">清除所有计划设置</button>
+  </div>
+</div>
+
 <!-- Header -->
 <div class="header">
   <div class="header-left">
@@ -753,6 +813,8 @@ function load(){
   }catch(e){}
   if(state.length!==totalCells()){state=Array(totalCells()).fill(false);}
   if(order.length!==totalCells()){order=[...Array(totalCells()).keys()];}
+  // Check if scheduled tasks overflow grid (only for today)
+  if(!viewingDate) setTimeout(()=>checkScheduleOverflow(todayStr()),200);
 }
 function save(){
   try{
@@ -820,11 +882,72 @@ function removeTS(name){
 }
 
 // ── Task helpers ──────────────────────────────────────────────────────────────
-function getActiveTasks(){
+
+// Returns true if a task should appear on a given date string (YYYY-MM-DD)
+function taskActiveOnDate(task, dateStr){
+  const dt=new Date(dateStr+'T12:00:00');
+  const wd=dt.getDay(); // 0=Sun…6=Sat
+  // If weekdays set, only active on those days
+  if(task.weekdays&&task.weekdays.length>0){
+    return task.weekdays.includes(wd);
+  }
+  // If scheduledDates set (and no weekdays), only active on those dates
+  if(task.scheduledDates&&task.scheduledDates.length>0){
+    return task.scheduledDates.includes(dateStr);
+  }
+  // No schedule = normal active flag
+  return task.active;
+}
+
+// Returns true if task has any schedule rules set
+function taskHasSchedule(task){
+  return (task.weekdays&&task.weekdays.length>0)||(task.scheduledDates&&task.scheduledDates.length>0);
+}
+
+// Get tasks effective for a given date (respects weekdays + scheduledDates)
+function getEffectiveActiveTasks(dateStr){
   const result=[];
-  for(const g of groups) for(const t of g.tasks) if(t.active) result.push(t.name);
+  for(const g of groups){
+    for(const t of g.tasks){
+      const hasSchedule=taskHasSchedule(t);
+      if(hasSchedule){
+        // appears if date matches schedule OR manually active
+        if(taskActiveOnDate(t,dateStr)||t.active) result.push({name:t.name,fromSchedule:true});
+      } else {
+        if(t.active) result.push({name:t.name,fromSchedule:false});
+      }
+    }
+  }
   return result;
 }
+
+// Legacy: plain name list for today (used by most existing code)
+function getActiveTasks(){
+  return getEffectiveActiveTasks(activeDate()).map(t=>t.name);
+}
+
+// Check if scheduled tasks overflow the grid, prompt to expand if needed
+// Returns true if ok to proceed, false if blocked
+function checkScheduleOverflow(dateStr){
+  if(viewingDate&&viewingDate!==todayStr())return true; // skip for history view
+  const tasks=getEffectiveActiveTasks(dateStr);
+  const n=tasks.length;
+  if(n<=totalCells())return true;
+  // Need bigger grid
+  const sizes=[9,16,25,36];
+  const next=sizes.find(s=>s>=n);
+  if(!next){
+    showToast(`⚠️ 今天有 ${n} 个计划任务，已超过 6×6 最大格子数（36），请减少指定日期的任务`);
+    return false;
+  }
+  const newSize=Math.sqrt(next);
+  showConfirm(
+    `今天有 ${n} 个计划任务，超过了当前 ${gridSize}×${gridSize} 格（${totalCells()} 格），建议切换到 ${newSize}×${newSize} 格`,
+    ()=>{setSize(newSize);}
+  );
+  return false;
+}
+
 function getTaskName(pos){
   const a=getActiveTasks(),idx=order[pos];
   return (idx<a.length)?a[idx]:'';
@@ -1021,8 +1144,9 @@ function renderTaskPanel(){
   body.innerHTML='';
   body._touchInstalled=false; // reset so handler reinstalls after DOM rebuild
   const active=getActiveTasks().length;
+  const schedCount=groups.reduce((s,g)=>s+g.tasks.filter(t=>taskHasSchedule(t)).length,0);
   const hint=document.createElement('div');hint.className='task-count-hint';hint.id='taskCountHint';
-  hint.textContent=`已选 ${active} 个（Bingo 使用前 ${totalCells()} 个）`;
+  hint.textContent=`已选 ${active} 个（Bingo 使用前 ${totalCells()} 个）${schedCount>0?' · '+schedCount+' 个有计划设置 📅':''}`;
   body.appendChild(hint);
   groups.forEach((grp,gi)=>{
     const gc=GROUP_COLORS[gi%GROUP_COLORS.length];
@@ -1233,9 +1357,7 @@ function _installPanelTouchHandler(){
       }
     } else if(!_drag.moved&&_drag.gi>=0&&_drag.ti>=0){
       const gi=_drag.gi,ti=_drag.ti;
-      if(groups[gi]&&groups[gi].tasks[ti]){
-        toggleTaskActive(gi,ti);
-      }
+      if(groups[gi]&&groups[gi].tasks[ti]) toggleTaskActive(gi,ti);
     }
     _drag.gi=-1;_drag.ti=-1;_drag.moved=false;
   },{passive:true});
@@ -1249,16 +1371,21 @@ function _installPanelTouchHandler(){
 
 function makeBubbleEl(gi,ti,task,gc){
   const b=document.createElement('div');
-  b.className='task-bubble'+(task.active?' active-bubble':'');
+  const hasSchedule=taskHasSchedule(task);
+  b.className='task-bubble'+(task.active||taskActiveOnDate(task,todayStr())?' active-bubble':'')+(hasSchedule?' has-schedule':'');
   if(gc){
-    if(task.active){
+    const isActive=task.active||taskActiveOnDate(task,todayStr());
+    if(isActive){
       b.style.background=gc.border;b.style.color='#fff';b.style.borderColor=gc.fg;
     } else {
       b.style.background=gc.bg;b.style.color=gc.fg;b.style.borderColor=gc.border+'55';
     }
   }
   b.dataset.gi=String(gi);b.dataset.ti=String(ti);
-  b.innerHTML=`<span>${escHtml(task.name)}</span><button class="bubble-del" onclick="event.stopPropagation();bubbleDelete(${gi},${ti})">✕</button>`;
+  // Build inner HTML: name + optional schedule dot + sched-btn + del
+  let schedDot=hasSchedule?`<span class="bubble-sched-dot" title="有计划设置"></span>`:'';
+  let schedBtn=`<button class="bubble-sched-btn" title="设置计划" onclick="event.stopPropagation();openSchedSheet(${gi},${ti})">📅</button>`;
+  b.innerHTML=`<span>${escHtml(task.name)}</span>${schedDot}${schedBtn}<button class="bubble-del" onclick="event.stopPropagation();bubbleDelete(${gi},${ti})">✕</button>`;
   b.addEventListener('click',e=>{
     if(e.sourceCapabilities&&!e.sourceCapabilities.firesTouchEvents){
       toggleTaskActive(gi,ti);
@@ -1295,7 +1422,10 @@ function makeBubbleEl(gi,ti,task,gc){
   return b;
 }
 
-function toggleTaskActive(gi,ti){groups[gi].tasks[ti].active=!groups[gi].tasks[ti].active;ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();}
+function toggleTaskActive(gi,ti){
+  const t=groups[gi].tasks[ti];
+  t.active=!t.active;ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+}
 function bubbleDelete(gi,ti){
   if(!groups[gi]||!groups[gi].tasks[ti])return;
   const name=groups[gi].tasks[ti].name;
@@ -1354,8 +1484,105 @@ function deleteGroup(gi){
 }
 function addGroup(){groups.push({name:'新分组',tasks:[]});ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();}
 function addTaskToGroup(gi,inp){const n=inp.value.trim();if(!n)return;groups[gi].tasks.push({name:n,active:true});inp.value='';ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();inp.focus();}
-function selectAllTasks(val){groups.forEach(g=>g.tasks.forEach(t=>t.active=val));ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();}
+function selectAllTasks(val){groups.forEach(g=>g.tasks.forEach(t=>{if(!taskHasSchedule(t))t.active=val;}));ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();}
 function applyTaskSelection(){order=[...Array(totalCells()).keys()];state=Array(totalCells()).fill(false);prevLines=0;save();closeTaskPanel();buildGrid();render();showToast('任务列表已更新 ✓');}
+
+// ── Schedule Sheet ────────────────────────────────────────────────────────────
+let _schedGi=-1,_schedTi=-1;
+
+function openSchedSheet(gi,ti){
+  closeTaskPanel(); // close task panel first
+  _schedGi=gi;_schedTi=ti;
+  const task=groups[gi].tasks[ti];
+  document.getElementById('schedSheetTitle').textContent='📅 '+task.name;
+  document.getElementById('schedSheetSub').textContent='设置任务自动出现的时间规则，设置后仅在指定日期出现';
+  // Render weekday buttons
+  const wds=task.weekdays||[];
+  document.querySelectorAll('.wd-btn').forEach(btn=>{
+    const wd=+btn.dataset.wd;
+    btn.classList.toggle('sel',wds.includes(wd));
+    btn.onclick=()=>{btn.classList.toggle('sel');};
+  });
+  // Set today as default date value
+  document.getElementById('schedDateInput').value=todayStr();
+  // Render existing dates
+  renderSchedDates(task.scheduledDates||[]);
+  document.getElementById('schedOverlay').classList.add('open');
+  document.getElementById('schedSheet').classList.add('open');
+}
+
+function closeSchedSheet(){
+  document.getElementById('schedOverlay').classList.remove('open');
+  document.getElementById('schedSheet').classList.remove('open');
+  _schedGi=-1;_schedTi=-1;
+}
+
+function renderSchedDates(dates){
+  const list=document.getElementById('schedDatesList');
+  list.innerHTML='';
+  const WD=['日','一','二','三','四','五','六'];
+  dates.forEach((ds,i)=>{
+    const dt=new Date(ds+'T12:00:00');
+    const label=`${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} 周${WD[dt.getDay()]}`;
+    const isToday=ds===todayStr();
+    const row=document.createElement('div');row.className='sched-date-item';
+    row.innerHTML=`<span class="sched-date-label">${label}${isToday?' <span style="font-size:.65rem;color:var(--done-dk);font-weight:900;">今天</span>':''}</span><button class="sched-date-del" onclick="schedDelDate(${i})">✕</button>`;
+    list.appendChild(row);
+  });
+}
+
+function schedAddDate(){
+  if(_schedGi<0||_schedTi<0)return;
+  const inp=document.getElementById('schedDateInput');
+  const ds=inp.value;
+  if(!ds)return;
+  const task=groups[_schedGi].tasks[_schedTi];
+  if(!task.scheduledDates)task.scheduledDates=[];
+  if(task.scheduledDates.includes(ds)){showToast('该日期已添加');return;}
+  task.scheduledDates.push(ds);
+  task.scheduledDates.sort();
+  renderSchedDates(task.scheduledDates);
+  // advance date input by 1 day for convenience
+  const next=new Date(ds+'T12:00:00');next.setDate(next.getDate()+1);
+  inp.value=next.toISOString().slice(0,10);
+}
+
+function schedDelDate(i){
+  if(_schedGi<0||_schedTi<0)return;
+  const task=groups[_schedGi].tasks[_schedTi];
+  task.scheduledDates.splice(i,1);
+  renderSchedDates(task.scheduledDates);
+}
+
+function saveSchedSheet(){
+  if(_schedGi<0||_schedTi<0)return;
+  const task=groups[_schedGi].tasks[_schedTi];
+  // Read weekday selections
+  const wds=[];
+  document.querySelectorAll('.wd-btn.sel').forEach(btn=>wds.push(+btn.dataset.wd));
+  task.weekdays=wds;
+  // scheduledDates already updated live
+  if(!task.scheduledDates)task.scheduledDates=[];
+  // If schedule set, clear manual active (schedule overrides)
+  if(taskHasSchedule(task)) task.active=false;
+  ls.set(getUserKey('groups'),JSON.stringify(groups));
+  closeSchedSheet();
+  renderTaskPanel();
+  // Recheck overflow for today
+  checkScheduleOverflow(todayStr());
+  showToast('计划已保存 ✓');
+}
+
+function clearSchedSheet(){
+  if(_schedGi<0||_schedTi<0)return;
+  const task=groups[_schedGi].tasks[_schedTi];
+  showConfirm(`清除「${task.name}」的所有计划设置？`,()=>{
+    task.weekdays=[];task.scheduledDates=[];task.active=false;
+    ls.set(getUserKey('groups'),JSON.stringify(groups));
+    closeSchedSheet();renderTaskPanel();
+    showToast('计划已清除');
+  });
+}
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
 function openDetail(pos){
