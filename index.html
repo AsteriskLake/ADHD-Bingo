@@ -126,6 +126,7 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .tp-all{background:var(--done-lt);color:var(--done-dk);}
 .tp-none{background:var(--coral-lt);color:#c05040;}
 .tp-apply{background:var(--done);color:#fff;}
+.tp-rand{background:var(--amber-lt);color:var(--amber-dk);}
 .task-panel-body{overflow-y:auto;padding:10px 16px 40px;flex:1;}
 .task-count-hint{font-size:.7rem;color:var(--text-lt);font-weight:600;text-align:center;padding:4px 0 8px;}
 
@@ -148,6 +149,7 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .task-bubble.active-bubble{background:var(--done);color:#fff;border-color:var(--done-dk);}
 .task-bubble.dragging-bubble{opacity:.45;transform:scale(.92);cursor:grabbing;}
 .task-bubble.drag-over-bubble{border-color:var(--purple);background:var(--purple-lt);}
+.group-drag-target{outline:2px dashed var(--purple)!important;border-radius:10px;background:var(--purple-lt)!important;}
 .bubble-del{width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.15);cursor:pointer;color:inherit;font-size:.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1;transition:background .15s;-webkit-tap-highlight-color:transparent;}
 .bubble-del:hover,.bubble-del:active{background:rgba(0,0,0,.32);}
 /* Trash drop zone */
@@ -403,10 +405,11 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 <div class="export-modal-overlay" id="exportModalOverlay">
   <div class="export-modal">
     <h3 id="exportModalTitle">📦 数据导出</h3>
-    <p id="exportModalDesc">复制以下代码，在目标设备/浏览器中选择「导入数据」并粘贴，即可迁移所有记录。</p>
+    <p id="exportModalDesc">「复制迁移码」用于设备间迁移（base64格式）。「结构化导出」生成可读 JSON，方便导入微信小程序等平台。</p>
     <textarea class="export-textarea" id="exportTextarea" placeholder="在此粘贴导入码…"></textarea>
     <div class="export-btns">
-      <button class="export-btn export-btn-copy" id="exportCopyBtn" onclick="exportCopy()">复制导出码</button>
+      <button class="export-btn export-btn-copy" id="exportCopyBtn" onclick="exportCopy()">复制迁移码</button>
+      <button class="export-btn" style="background:var(--green);color:#fff;" onclick="exportUnifiedCopy()">📋 结构化导出</button>
       <button class="export-btn export-btn-import" onclick="importData()">导入数据</button>
       <button class="export-btn export-btn-close" onclick="closeExportModal()">关闭</button>
     </div>
@@ -454,6 +457,7 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
     <button class="tp-all" onclick="selectAllTasks(true)">全选</button>
     <button class="tp-none" onclick="selectAllTasks(false)">全取消</button>
     <button class="tp-apply" onclick="applyTaskSelection()">应用 ✓</button>
+    <button class="tp-rand" onclick="randomPickTasks()" title="随机推荐">🎲 随机</button>
   </div>
   <!-- Size setting inside task panel -->
   <div style="padding:6px 16px 0;">
@@ -1022,7 +1026,7 @@ function renderTaskPanel(){
   body.appendChild(hint);
   groups.forEach((grp,gi)=>{
     const gc=GROUP_COLORS[gi%GROUP_COLORS.length];
-    const gh=document.createElement('div');gh.className='group-header';
+    const gh=document.createElement('div');gh.className='group-header';gh.dataset.gi=gi;
     gh.style.cssText=`border-left-color:${gc.border};background:${gc.bg};`;
     // Count active in group
     const grpActive=grp.tasks.filter(t=>t.active).length;
@@ -1030,6 +1034,34 @@ function renderTaskPanel(){
     gh.innerHTML=`<span style="color:${gc.border};font-size:.85rem">▸</span><input class="group-name-input" value="${escHtml(grp.name)}" maxlength="20" autocomplete="off" style="color:${gc.fg}" onchange="renameGroup(${gi},this.value)" onblur="renameGroup(${gi},this.value)"/><div class="group-controls"><button class="group-sel-all" onclick="toggleGroupSelect(${gi})" style="background:${allSel?gc.border:'transparent'};color:${allSel?'#fff':gc.fg};border:1.5px solid ${gc.border}">${allSel?'取消':'全选'}</button>${groups.length>1?`<button class="group-del-btn" onclick="deleteGroup(${gi})">✕</button>`:''}</div>`;
     body.appendChild(gh);
     const wrap=document.createElement('div');wrap.className='task-bubble-wrap';wrap.dataset.group=gi;
+    // Allow dropping onto the group wrap (empty area) on desktop
+    wrap.addEventListener('dragover',e=>{e.preventDefault();wrap.classList.add('group-drag-target');});
+    wrap.addEventListener('dragleave',()=>wrap.classList.remove('group-drag-target'));
+    wrap.addEventListener('drop',e=>{
+      e.preventDefault();wrap.classList.remove('group-drag-target');
+      const parts=e.dataTransfer.getData('text/plain').split(',');
+      const sgi=parseInt(parts[0]),sti=parseInt(parts[1]);
+      if(isNaN(sgi)||isNaN(sti))return;
+      const tgi=gi;
+      if(sgi===tgi)return;
+      const moved=groups[sgi].tasks.splice(sti,1)[0];
+      groups[tgi].tasks.push(moved);
+      ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+    });
+    // Allow dropping onto group header on desktop
+    gh.addEventListener('dragover',e=>{e.preventDefault();gh.classList.add('group-drag-target');});
+    gh.addEventListener('dragleave',()=>gh.classList.remove('group-drag-target'));
+    gh.addEventListener('drop',e=>{
+      e.preventDefault();gh.classList.remove('group-drag-target');
+      const parts=e.dataTransfer.getData('text/plain').split(',');
+      const sgi=parseInt(parts[0]),sti=parseInt(parts[1]);
+      if(isNaN(sgi)||isNaN(sti))return;
+      const tgi=gi;
+      if(sgi===tgi)return;
+      const moved=groups[sgi].tasks.splice(sti,1)[0];
+      groups[tgi].tasks.push(moved);
+      ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+    });
     grp.tasks.forEach((task,ti)=>wrap.appendChild(makeBubbleEl(gi,ti,task,gc)));
     body.appendChild(wrap);
     const addRow=document.createElement('div');addRow.className='task-add-row';
@@ -1041,15 +1073,25 @@ function renderTaskPanel(){
 }
 
 // ── Bubble drag: single delegated handler on panel body ───────────────────────
-let _drag={active:false,gi:-1,ti:-1,ghost:null,startX:0,startY:0,moved:false,lpTimer:null};
+let _drag={active:false,gi:-1,ti:-1,ghost:null,startX:0,startY:0,moved:false,lpTimer:null,lastTargetGi:-1};
 
 function _dragCleanup(){
   clearTimeout(_drag.lpTimer);_drag.lpTimer=null;
   if(_drag.ghost){_drag.ghost.remove();_drag.ghost=null;}
-  _drag.active=false;_drag.moved=false;
+  _drag.active=false;_drag.moved=false;_drag.lastTargetGi=-1;
   const pb=document.getElementById('taskPanelBody');if(pb)pb.style.overflow='';
   const tz=document.getElementById('trashZone');if(tz)tz.classList.remove('visible','drag-active');
-  document.querySelectorAll('.dragging-bubble,.drag-over-bubble').forEach(el=>el.classList.remove('dragging-bubble','drag-over-bubble'));
+  document.querySelectorAll('.dragging-bubble,.drag-over-bubble,.group-drag-target').forEach(el=>el.classList.remove('dragging-bubble','drag-over-bubble','group-drag-target'));
+}
+
+// Update ghost color to match target group
+function _updateGhostColor(targetGi){
+  if(!_drag.ghost||targetGi===_drag.lastTargetGi)return;
+  _drag.lastTargetGi=targetGi;
+  const gc=GROUP_COLORS[targetGi%GROUP_COLORS.length];
+  _drag.ghost.style.background=gc.border;
+  _drag.ghost.style.color='#fff';
+  _drag.ghost.style.borderColor=gc.fg;
 }
 
 function _installPanelTouchHandler(){
@@ -1063,7 +1105,7 @@ function _installPanelTouchHandler(){
     if(!bel)return;
     _drag.gi=+bel.dataset.gi;_drag.ti=+bel.dataset.ti;
     _drag.startX=touch.clientX;_drag.startY=touch.clientY;
-    _drag.moved=false;_drag.active=false;
+    _drag.moved=false;_drag.active=false;_drag.lastTargetGi=-1;
     clearTimeout(_drag.lpTimer);
     _drag.lpTimer=setTimeout(()=>{
       _drag.lpTimer=null;
@@ -1091,40 +1133,58 @@ function _installPanelTouchHandler(){
     const dx=touch.clientX-_drag.startX,dy=touch.clientY-_drag.startY;
     const dist=Math.sqrt(dx*dx+dy*dy);
 
-    if(dist>3)_drag.moved=true; // any movement cancels long-press
+    if(dist>3)_drag.moved=true;
     if(_drag.moved)clearTimeout(_drag.lpTimer);
 
     if(!_drag.active&&dist>12){
-      // start drag
       _drag.active=true;
-      ev.preventDefault(); // stop scroll
+      ev.preventDefault();
       const bel=pb.querySelector(`.task-bubble[data-gi="${_drag.gi}"][data-ti="${_drag.ti}"]`);
       if(!bel)return;
       pb.style.overflow='hidden';
       const r=bel.getBoundingClientRect();
       if(_drag.ghost)_drag.ghost.remove();
       _drag.ghost=bel.cloneNode(true);
-      _drag.ghost.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:9999;opacity:.85;transform:scale(1.12);transition:none;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.18);`;
+      // ghost starts with source group color (active style)
+      const srcGc=GROUP_COLORS[_drag.gi%GROUP_COLORS.length];
+      _drag.ghost.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:9999;opacity:.9;transform:scale(1.1);transition:background .2s,color .2s,border-color .2s;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.22);background:${srcGc.border};color:#fff;border:2px solid ${srcGc.fg};`;
       document.body.appendChild(_drag.ghost);
       bel.style.opacity='.25';
+      _drag.lastTargetGi=_drag.gi;
       const tz=document.getElementById('trashZone');if(tz)tz.classList.add('visible');
     }
 
     if(_drag.active&&_drag.ghost){
       ev.preventDefault();
-      const gw=_drag.ghost.offsetWidth,gh=_drag.ghost.offsetHeight;
+      const gw=_drag.ghost.offsetWidth,gh2=_drag.ghost.offsetHeight;
       _drag.ghost.style.left=(touch.clientX-gw/2)+'px';
-      _drag.ghost.style.top=(touch.clientY-gh/2)+'px';
-      // hide ghost temporarily to find target
+      _drag.ghost.style.top=(touch.clientY-gh2/2)+'px';
       _drag.ghost.style.display='none';
       const hit=document.elementFromPoint(touch.clientX,touch.clientY);
       _drag.ghost.style.display='';
-      document.querySelectorAll('.drag-over-bubble,.drag-active').forEach(el=>el.classList.remove('drag-over-bubble','drag-active'));
+      document.querySelectorAll('.drag-over-bubble,.drag-active,.group-drag-target').forEach(el=>el.classList.remove('drag-over-bubble','drag-active','group-drag-target'));
       if(hit){
         const tb=hit.closest('.task-bubble');
         const tz=hit.closest('.task-trash-zone');
-        if(tb)tb.classList.add('drag-over-bubble');
-        if(tz)tz.classList.add('drag-active');
+        const gh=hit.closest('.group-header');
+        const wrap=hit.closest('.task-bubble-wrap');
+        if(tb){
+          const tgi=+tb.dataset.gi;
+          tb.classList.add('drag-over-bubble');
+          _updateGhostColor(tgi);
+        } else if(tz){
+          tz.classList.add('drag-active');
+          // ghost goes red on trash
+          _drag.lastTargetGi=-99;
+          _drag.ghost.style.background='var(--coral)';
+          _drag.ghost.style.borderColor='#c05040';
+        } else if(gh){
+          const tgi=+gh.dataset.gi;
+          if(!isNaN(tgi)){gh.classList.add('group-drag-target');_updateGhostColor(tgi);}
+        } else if(wrap){
+          const tgi=+wrap.dataset.group;
+          if(!isNaN(tgi)){wrap.classList.add('group-drag-target');_updateGhostColor(tgi);}
+        }
       }
     }
   },{passive:false});
@@ -1135,14 +1195,14 @@ function _installPanelTouchHandler(){
       const touch=ev.changedTouches[0];
       const gi=_drag.gi,ti=_drag.ti;
       _dragCleanup();
-      // restore source bubble opacity
       const src=pb.querySelector(`.task-bubble[data-gi="${gi}"][data-ti="${ti}"]`);
       if(src)src.style.opacity='';
-      // find drop target
       const hit=document.elementFromPoint(touch.clientX,touch.clientY);
       if(hit&&gi>=0&&ti>=0&&groups[gi]&&groups[gi].tasks[ti]){
         const trash=hit.closest('.task-trash-zone');
         const tb=hit.closest('.task-bubble');
+        const gh=hit.closest('.group-header');
+        const wrap=hit.closest('.task-bubble-wrap');
         if(trash){
           const name=groups[gi].tasks[ti].name;
           groups[gi].tasks.splice(ti,1);
@@ -1155,7 +1215,26 @@ function _installPanelTouchHandler(){
             groups[tgi].tasks.splice(tti,0,m);
             ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
           }
+        } else if(gh){
+          const tgi=+gh.dataset.gi;
+          if(!isNaN(tgi)&&tgi!==gi){
+            const m=groups[gi].tasks.splice(ti,1)[0];
+            groups[tgi].tasks.push(m);
+            ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+          }
+        } else if(wrap){
+          const tgi=+wrap.dataset.group;
+          if(!isNaN(tgi)&&tgi!==gi){
+            const m=groups[gi].tasks.splice(ti,1)[0];
+            groups[tgi].tasks.push(m);
+            ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+          }
         }
+      }
+    } else if(!_drag.moved&&_drag.gi>=0&&_drag.ti>=0){
+      const gi=_drag.gi,ti=_drag.ti;
+      if(groups[gi]&&groups[gi].tasks[ti]){
+        toggleTaskActive(gi,ti);
       }
     }
     _drag.gi=-1;_drag.ti=-1;_drag.moved=false;
@@ -1171,10 +1250,15 @@ function _installPanelTouchHandler(){
 function makeBubbleEl(gi,ti,task,gc){
   const b=document.createElement('div');
   b.className='task-bubble'+(task.active?' active-bubble':'');
-  if(gc&&!task.active){b.style.background=gc.bg;b.style.color=gc.fg;b.style.borderColor=gc.border+'55';}
+  if(gc){
+    if(task.active){
+      b.style.background=gc.border;b.style.color='#fff';b.style.borderColor=gc.fg;
+    } else {
+      b.style.background=gc.bg;b.style.color=gc.fg;b.style.borderColor=gc.border+'55';
+    }
+  }
   b.dataset.gi=String(gi);b.dataset.ti=String(ti);
   b.innerHTML=`<span>${escHtml(task.name)}</span><button class="bubble-del" onclick="event.stopPropagation();bubbleDelete(${gi},${ti})">✕</button>`;
-  // Click for desktop only — suppress on touch to avoid double-toggle
   b.addEventListener('click',e=>{
     if(e.sourceCapabilities&&!e.sourceCapabilities.firesTouchEvents){
       toggleTaskActive(gi,ti);
@@ -1183,7 +1267,6 @@ function makeBubbleEl(gi,ti,task,gc){
     }
   });
   b.addEventListener('contextmenu',e=>{e.preventDefault();openTaskJournal(task.name);});
-  // Desktop HTML5 drag
   b.draggable=true;
   b.addEventListener('dragstart',e=>{
     e.dataTransfer.effectAllowed='move';
@@ -1193,6 +1276,7 @@ function makeBubbleEl(gi,ti,task,gc){
   });
   b.addEventListener('dragend',()=>{
     b.style.opacity='';
+    document.querySelectorAll('.group-drag-target,.drag-over-bubble').forEach(el=>el.classList.remove('group-drag-target','drag-over-bubble'));
     const tz=document.getElementById('trashZone');if(tz)tz.classList.remove('visible','drag-active');
   });
   b.addEventListener('dragover',e=>{e.preventDefault();b.classList.add('drag-over-bubble');});
@@ -1227,6 +1311,37 @@ function toggleGroupSelect(gi){
   const allSel=groups[gi].tasks.every(t=>t.active);
   groups[gi].tasks.forEach(t=>t.active=!allSel);
   ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+}
+function randomPickTasks(){
+  const needed=totalCells();
+  // Find task names that are currently lit (checked on the grid)
+  const litNames=new Set();
+  for(let pos=0;pos<totalCells();pos++){if(state[pos]){const n=getTaskName(pos);if(n)litNames.add(n);}}
+  // Gather all tasks, split into locked (lit) and free pools
+  const locked=[],free=[];
+  for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++){
+    const t=groups[gi].tasks[ti];
+    if(litNames.has(t.name))locked.push({gi,ti});
+    else free.push({gi,ti});
+  }
+  if(locked.length+free.length===0){showToast('还没有任务，先添加一些吧！');return;}
+  if(locked.length>=needed){
+    // All slots already filled by lit tasks — just keep them active, deactivate rest
+    const lockedSet=new Set(locked.map(({gi,ti})=>`${gi}_${ti}`));
+    for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++)groups[gi].tasks[ti].active=lockedSet.has(`${gi}_${ti}`);
+    ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+    showToast(`✨ 已点亮的格子全部保留`);return;
+  }
+  const slotsLeft=needed-locked.length;
+  if(free.length<slotsLeft){showToast(`任务不足 ${needed} 个，请再添加一些`);return;}
+  // Shuffle free pool and pick what's needed
+  for(let i=free.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[free[i],free[j]]=[free[j],free[i]];}
+  const picked=new Set([...locked,...free.slice(0,slotsLeft)].map(({gi,ti})=>`${gi}_${ti}`));
+  for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++)groups[gi].tasks[ti].active=picked.has(`${gi}_${ti}`);
+  ls.set(getUserKey('groups'),JSON.stringify(groups));
+  renderTaskPanel();
+  const lockedCount=locked.length;
+  showToast(lockedCount>0?`🎲 随机补充 ${slotsLeft} 个，保留 ${lockedCount} 个已点亮`:`🎲 已随机选出 ${needed} 个任务`);
 }
 function renameGroup(gi,v){if(v.trim())groups[gi].name=v.trim();ls.set(getUserKey('groups'),JSON.stringify(groups));}
 function renameTask(gi,ti,v){if(v.trim())groups[gi].tasks[ti].name=v.trim();ls.set(getUserKey('groups'),JSON.stringify(groups));}
@@ -1560,7 +1675,23 @@ function render(){
   prevLines=n;
 }
 
-function doShuffle(){for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}state=Array(totalCells()).fill(false);prevLines=0;save();buildGrid();render();showToast('已随机排列 🔀');}
+function doShuffle(){
+  // Build a map of taskName → done, so state follows the task after shuffle
+  const activeTasks=getActiveTasks();
+  const doneByName={};
+  for(let pos=0;pos<order.length;pos++){
+    const idx=order[pos];
+    if(idx<activeTasks.length)doneByName[activeTasks[idx]]=state[pos];
+  }
+  // Shuffle order
+  for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+  // Rebuild state to follow tasks
+  for(let pos=0;pos<order.length;pos++){
+    const idx=order[pos];
+    state[pos]=idx<activeTasks.length?(doneByName[activeTasks[idx]]||false):false;
+  }
+  save();buildGrid();render();showToast('已随机排列 🔀');
+}
 function doReset(){state=Array(totalCells()).fill(false);prevLines=0;save();buildGrid();render();showToast('已重置');}
 
 // ── Achievements ──────────────────────────────────────────────────────────────
@@ -1982,7 +2113,92 @@ function updateUserBadge(){
   }
 }
 
-// ── Data Export / Import (for PWA ↔ Browser migration) ────────────────────────
+// ── Unified export format (WeChat miniprogram compatible) ─────────────────────
+// Exports all data as a single structured JSON object that maps 1:1
+// to wx.setStorageSync keys in a WeChat miniprogram.
+// Schema version lets the miniprogram detect and handle migrations.
+const EXPORT_SCHEMA_VERSION = '1.0';
+
+function exportUnifiedData() {
+  // Collect all daily records
+  const dailyRecords = {};
+  const prefix = userPrefix();
+  const skip = new Set(Object.values(K));
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(prefix) || skip.has(key)) continue;
+    const d = key.replace(prefix, '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    try { dailyRecords[d] = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+  }
+
+  const unified = {
+    _schema: EXPORT_SCHEMA_VERSION,
+    _exportedAt: new Date().toISOString(),
+    _appVersion: APP_VERSION,
+    user: currentUser ? { username: currentUser.username } : null,
+    appName,
+    gridSize,
+    groups,          // [{name, tasks:[{name,active}]}]
+    details,         // {taskName: {notes, todos:[{text,done}]}}
+    mandatory: [...mandatory],
+    timestamps,      // {YYYY-MM-DD: [{name, time}]}
+    dailyRecords,    // {YYYY-MM-DD: {state, order, done, lines, pct, gridSize}}
+    achievements: {
+      unlocked: [...achUnlocked],
+      custom: achCustom,
+      userDefined: achUserDefined,
+    },
+    theme: ls.get(K.theme) || 'default',
+  };
+  return JSON.stringify(unified, null, 2);
+}
+
+function exportUnifiedCopy() {
+  const data = exportUnifiedData();
+  try {
+    navigator.clipboard.writeText(data).then(() => showToast('已复制结构化数据 ✓'));
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = data; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('已复制 ✓');
+  }
+}
+
+function importUnifiedData(jsonStr) {
+  let d;
+  try { d = JSON.parse(jsonStr); } catch(e) { showToast('JSON 格式错误'); return false; }
+  if (!d._schema) { showToast('不是有效的结构化导出格式'); return false; }
+  try {
+    if (d.appName) { appName = d.appName; ls.set(K.name, appName); }
+    if (d.gridSize && [3,4,5,6].includes(d.gridSize)) { gridSize = d.gridSize; ls.set(K.size, String(gridSize)); }
+    if (Array.isArray(d.groups)) { groups = d.groups; }
+    if (d.details && typeof d.details === 'object') { details = d.details; }
+    if (Array.isArray(d.mandatory)) { mandatory = new Set(d.mandatory); }
+    if (d.timestamps && typeof d.timestamps === 'object') { timestamps = d.timestamps; }
+    if (d.achievements) {
+      if (Array.isArray(d.achievements.unlocked)) achUnlocked = new Set(d.achievements.unlocked);
+      if (d.achievements.custom) achCustom = d.achievements.custom;
+      if (Array.isArray(d.achievements.userDefined)) achUserDefined = d.achievements.userDefined;
+    }
+    // Restore daily records
+    if (d.dailyRecords) {
+      const prefix = userPrefix();
+      for (const [date, rec] of Object.entries(d.dailyRecords)) {
+        ls.set(prefix + date, JSON.stringify(rec));
+      }
+    }
+    // Save everything
+    saveUserData();
+    ls.set(getUserKey('timestamps'), JSON.stringify(timestamps));
+    ls.set(getUserKey('achievements'), JSON.stringify({ unlocked: [...achUnlocked], custom: achCustom, userDefined: achUserDefined }));
+    loadAll(); load(); buildGrid(); render();
+    showToast('结构化数据导入成功 ✓');
+    return true;
+  } catch(e) { showToast('导入出错：' + e.message); return false; }
+}
 function exportAllData(){
   const data={};
   for(let i=0;i<localStorage.length;i++){
