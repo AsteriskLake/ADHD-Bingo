@@ -35,7 +35,7 @@ body.theme-mono .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){bac
 body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:max(24px,env(safe-area-inset-top)) 16px max(70px,calc(70px + env(safe-area-inset-bottom))) max(16px,env(safe-area-inset-left));color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 
 /* Header */
-.header{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;opacity:0;animation:up .45s ease forwards;transform:translateZ(0);-webkit-transform:translateZ(0);}
+.header{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;animation:up-stable .45s ease forwards;transform:translateZ(0);-webkit-transform:translateZ(0);}
 .header-left{flex:1;min-width:0;}
 .title{font-size:1.5rem;font-weight:900;font-family:"PingFang SC","苹方","Noto Sans SC","Microsoft YaHei",sans-serif;color:var(--text);letter-spacing:.02em;cursor:pointer;display:inline-block;border-radius:8px;padding:2px 6px;margin-left:-6px;transition:background .2s;user-select:none;-webkit-user-select:none;}
 .title:hover{background:var(--purple-lt);}
@@ -409,7 +409,8 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .history-item.long-press-active{background:var(--done-lt)!important;transform:scale(.98);}
 .history-date-block{cursor:pointer;}
 .history-longpress-hint{font-size:.62rem;color:var(--text-lt);font-weight:600;text-align:center;padding:4px 0 0;opacity:.7;}
-@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes up-stable{from{transform:translateY(16px)}to{transform:translateY(0)}}
 @keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.28)}65%{transform:scale(.92)}100%{transform:scale(1)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 .pop{animation:pop .3s ease;}
@@ -2042,9 +2043,13 @@ function buildGrid(){
     if(!isEmpty){const dot=document.createElement('span');dot.className='note-dot'+(hasNoteOrTodo(taskName)?' show':'');c.appendChild(dot);}
     if(!isEmpty){
       c.addEventListener('mousedown',()=>startPress(pos,c));c.addEventListener('mouseup',()=>cancelPress(c));c.addEventListener('mouseleave',()=>cancelPress(c));
-      c.addEventListener('touchstart',e=>{e.preventDefault();startPress(pos,c);},{passive:false});
-      c.addEventListener('touchend',()=>{cancelPress(c);if(!didLongPress){c._touchHandled=true;handleTap(pos);}});
-      c.addEventListener('touchmove',()=>cancelPress(c));
+      c.addEventListener('touchstart',e=>{e.preventDefault();c._touchStartX=e.touches[0].clientX;c._touchStartY=e.touches[0].clientY;c._touchMoved=false;startPress(pos,c);},{passive:false});
+      c.addEventListener('touchmove',e=>{
+        const dx=e.touches[0].clientX-c._touchStartX,dy=e.touches[0].clientY-c._touchStartY;
+        if(Math.sqrt(dx*dx+dy*dy)>8)c._touchMoved=true;
+        cancelPress(c);
+      });
+      c.addEventListener('touchend',()=>{cancelPress(c);if(!didLongPress&&!c._touchMoved){c._touchHandled=true;handleTap(pos);}});
       c.onclick=()=>{if(c._touchHandled){c._touchHandled=false;return;}if(!didLongPress)handleTap(pos);};
     }
     g.appendChild(c);
