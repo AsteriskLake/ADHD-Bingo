@@ -143,12 +143,14 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .add-group-btn:hover{background:var(--purple-lt);color:#7b5ea7;}
 
 /* Task bubbles */
-.task-bubble-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px;}
+.task-bubble-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px;width:100%;align-content:flex-start;}
 .task-bubble{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:99px;font-size:.82rem;font-weight:700;font-family:"PingFang SC","苹方","Noto Sans SC",sans-serif;background:var(--bg);color:var(--text-mid);border:2px solid transparent;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:all .18s;position:relative;}
 .task-bubble:hover{background:var(--done-lt);}
 .task-bubble.active-bubble{background:var(--done);color:#fff;border-color:var(--done-dk);}
 .task-bubble.dragging-bubble{opacity:.45;transform:scale(.92);cursor:grabbing;}
 .task-bubble.drag-over-bubble{border-color:var(--purple);background:var(--purple-lt);}
+.task-bubble.drag-over-before{border-left:3px solid var(--purple);padding-left:10px;}
+.task-bubble.drag-over-after{border-right:3px solid var(--purple);padding-right:10px;}
 .task-bubble.has-schedule{padding-right:8px;}
 .group-drag-target{outline:2px dashed var(--purple)!important;border-radius:10px;background:var(--purple-lt)!important;}
 /* Schedule indicator dot on bubble */
@@ -480,7 +482,7 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 <div class="task-panel-overlay" id="taskOverlay" onclick="closeTaskPanel()"></div>
 <div class="task-panel" id="taskPanel">
   <div class="task-panel-header">
-    <div><div class="task-panel-title">📋 任务列表</div><div class="task-panel-sub">点击选择 · 拖动排序/移组 · 双击更多</div></div>
+    <div><div class="task-panel-title">📋 任务列表</div><div class="task-panel-sub">点击选择 · 拖动排序/换组 · 双击更多</div></div>
     <button class="task-panel-close" onclick="closeTaskPanel()">✕</button>
   </div>
   <div class="task-panel-actions">
@@ -1146,7 +1148,7 @@ function cancelPress(el){clearTimeout(pressTimer);pressTimer=null;el.classList.r
 function handleTap(pos){
   if(didLongPress)return;
   if(tapPos===pos){clearTimeout(tapTimer);tapTimer=null;tapPos=-1;vibrate(30);openDetail(pos);}
-  else{clearTimeout(tapTimer);tapPos=pos;tapTimer=setTimeout(()=>{tapTimer=null;tapPos=-1;toggle(pos);},300);}
+  else{clearTimeout(tapTimer);tapPos=pos;tapTimer=setTimeout(()=>{tapTimer=null;tapPos=-1;toggle(pos);},220);}
 }
 
 // Group colors
@@ -1160,6 +1162,7 @@ const GROUP_COLORS=[
 ];
 
 function openTaskPanel(){
+  clearTimeout(tapTimer);tapTimer=null;tapPos=-1;
   updateSizeBtns();
   renderTaskPanel();
   document.getElementById('taskOverlay').classList.add('open');
@@ -1171,6 +1174,8 @@ function closeTaskPanel(){
   document.getElementById('taskOverlay').classList.remove('open');
   document.getElementById('taskPanel').classList.remove('open');
   _dragCleanup();
+  // Clear any pending grid tap state so it doesn't fire on return
+  clearTimeout(tapTimer);tapTimer=null;tapPos=-1;
 }
 
 function setupTrashZone(){
@@ -1252,7 +1257,7 @@ function renderTaskPanel(){
 }
 
 // ── Bubble drag: single delegated handler on panel body ───────────────────────
-let _drag={active:false,gi:-1,ti:-1,ghost:null,startX:0,startY:0,moved:false,lpTimer:null,lastTargetGi:-1};
+let _drag={active:false,gi:-1,ti:-1,ghost:null,startX:0,startY:0,moved:false,lpTimer:null,lastTargetGi:-1,hoverBubble:null,hoverWrap:null,hoverTrash:false,hoverInsertBefore:true};
 
 function _dragCleanup(){
   clearTimeout(_drag.lpTimer);_drag.lpTimer=null;
@@ -1271,6 +1276,46 @@ function _updateGhostColor(targetGi){
   _drag.ghost.style.background=gc.border;
   _drag.ghost.style.color='#fff';
   _drag.ghost.style.borderColor=gc.fg;
+}
+
+// Find best insert target by scanning all bubbles in a wrap.
+// Uses reading-order logic: find the row closest to ty, then within that row
+// find the correct left/right split — handles row-end empty space correctly.
+function _getGapInsertTarget(wrap,tx,ty,srcGi,srcTi){
+  const bubbles=[...wrap.querySelectorAll('.task-bubble')]
+    .filter(b=>!(+b.dataset.gi===srcGi&&+b.dataset.ti===srcTi));
+  if(!bubbles.length)return null;
+
+  // Group bubbles into rows by their vertical center
+  const rows=[];
+  bubbles.forEach(bel=>{
+    const r=bel.getBoundingClientRect();
+    const cy=r.top+r.height/2;
+    let row=rows.find(rw=>Math.abs(rw.cy-cy)<r.height*0.6);
+    if(!row){row={cy,items:[]};rows.push(row);}
+    row.items.push({bel,r});
+  });
+  rows.forEach(rw=>rw.items.sort((a,b)=>a.r.left-b.r.left));
+  rows.sort((a,b)=>a.cy-b.cy);
+
+  // Find the closest row to ty
+  let bestRow=rows[0];
+  let bestRowDist=Math.abs(rows[0].cy-ty);
+  rows.forEach(rw=>{
+    const d=Math.abs(rw.cy-ty);
+    if(d<bestRowDist){bestRowDist=d;bestRow=rw;}
+  });
+
+  // Within that row, find insert position by X
+  const items=bestRow.items;
+  // If tx is to the right of the last bubble in the row → insert after last
+  const last=items[items.length-1];
+  if(tx>=last.r.right) return {bel:last.bel,insertBefore:false};
+  // Otherwise find which bubble's midpoint tx falls before
+  for(const {bel,r} of items){
+    if(tx<r.left+r.width/2) return {bel,insertBefore:true};
+  }
+  return {bel:last.bel,insertBefore:false};
 }
 
 function _installPanelTouchHandler(){
@@ -1317,7 +1362,6 @@ function _installPanelTouchHandler(){
     // ── Double-tap detection (independent of drag) ──
     const now=Date.now();
     if(now-_lastTapTime<350&&_lastTapGi===gi&&_lastTapTi===ti){
-      // Second tap within window → show menu immediately on touchstart
       _lastTapTime=0;_lastTapGi=-1;_lastTapTi=-1;
       clearTimeout(_drag.lpTimer);_drag.lpTimer=null;
       vibrate(30);showBubbleMenu(gi,ti);
@@ -1328,6 +1372,7 @@ function _installPanelTouchHandler(){
     _drag.gi=gi;_drag.ti=ti;
     _drag.startX=touch.clientX;_drag.startY=touch.clientY;
     _drag.moved=false;_drag.active=false;_drag.lastTargetGi=-1;
+    _drag.hoverBubble=null;_drag.hoverWrap=null;_drag.hoverTrash=false;
     clearTimeout(_drag.lpTimer);
     _drag.lpTimer=setTimeout(()=>{
       _drag.lpTimer=null;
@@ -1347,21 +1392,20 @@ function _installPanelTouchHandler(){
     const dx=touch.clientX-_drag.startX,dy=touch.clientY-_drag.startY;
     const dist=Math.sqrt(dx*dx+dy*dy);
 
-    if(dist>3)_drag.moved=true;
+    if(dist>5)_drag.moved=true;
     if(_drag.moved)clearTimeout(_drag.lpTimer);
 
-    if(!_drag.active&&dist>12){
+    if(!_drag.active&&dist>10){
       _drag.active=true;
-      ev.preventDefault();
       const bel=pb.querySelector(`.task-bubble[data-gi="${_drag.gi}"][data-ti="${_drag.ti}"]`);
       if(!bel)return;
       pb.style.overflow='hidden';
       const r=bel.getBoundingClientRect();
       if(_drag.ghost)_drag.ghost.remove();
-      _drag.ghost=bel.cloneNode(true);
-      // ghost starts with source group color (active style)
+      _drag.ghost=document.createElement('div');
+      _drag.ghost.textContent=bel.querySelector('span')?bel.querySelector('span').textContent:bel.textContent;
       const srcGc=GROUP_COLORS[_drag.gi%GROUP_COLORS.length];
-      _drag.ghost.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:9999;opacity:.9;transform:scale(1.1);transition:background .2s,color .2s,border-color .2s;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.22);background:${srcGc.border};color:#fff;border:2px solid ${srcGc.fg};`;
+      _drag.ghost.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;min-width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:9999;opacity:.92;transform:scale(1.08);transition:background .2s,color .2s;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.25);background:${srcGc.border};color:#fff;border:2px solid ${srcGc.fg};display:inline-flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;padding:6px 14px;white-space:nowrap;`;
       document.body.appendChild(_drag.ghost);
       bel.style.opacity='.25';
       _drag.lastTargetGi=_drag.gi;
@@ -1373,31 +1417,54 @@ function _installPanelTouchHandler(){
       const gw=_drag.ghost.offsetWidth,gh2=_drag.ghost.offsetHeight;
       _drag.ghost.style.left=(touch.clientX-gw/2)+'px';
       _drag.ghost.style.top=(touch.clientY-gh2/2)+'px';
-      _drag.ghost.style.display='none';
+
+      // Find what's under the finger (hide ghost first)
+      _drag.ghost.style.visibility='hidden';
       const hit=document.elementFromPoint(touch.clientX,touch.clientY);
-      _drag.ghost.style.display='';
-      document.querySelectorAll('.drag-over-bubble,.drag-active,.group-drag-target').forEach(el=>el.classList.remove('drag-over-bubble','drag-active','group-drag-target'));
-      if(hit){
-        const tb=hit.closest('.task-bubble');
-        const tz=hit.closest('.task-trash-zone');
-        const gh=hit.closest('.group-header');
-        const wrap=hit.closest('.task-bubble-wrap');
-        if(tb){
-          const tgi=+tb.dataset.gi;
-          tb.classList.add('drag-over-bubble');
-          _updateGhostColor(tgi);
-        } else if(tz){
-          tz.classList.add('drag-active');
-          // ghost goes red on trash
-          _drag.lastTargetGi=-99;
-          _drag.ghost.style.background='var(--coral)';
-          _drag.ghost.style.borderColor='#c05040';
-        } else if(gh){
+      _drag.ghost.style.visibility='';
+
+      document.querySelectorAll('.drag-over-bubble,.drag-over-before,.drag-over-after,.drag-active,.group-drag-target').forEach(el=>el.classList.remove('drag-over-bubble','drag-over-before','drag-over-after','drag-active','group-drag-target'));
+      _drag.hoverBubble=null;_drag.hoverWrap=null;_drag.hoverTrash=false;_drag.hoverInsertBefore=true;
+
+      const tx=touch.clientX,ty=touch.clientY;
+
+      // Check trash first
+      const tz2=hit&&hit.closest('.task-trash-zone');
+      if(tz2){
+        tz2.classList.add('drag-active');
+        _drag.hoverTrash=true;
+        _drag.ghost.style.background='var(--coral)';_drag.ghost.style.borderColor='#c05040';
+      } else {
+        // Check group header
+        const gh=hit&&hit.closest('.group-header');
+        if(gh){
           const tgi=+gh.dataset.gi;
-          if(!isNaN(tgi)){gh.classList.add('group-drag-target');_updateGhostColor(tgi);}
-        } else if(wrap){
-          const tgi=+wrap.dataset.group;
-          if(!isNaN(tgi)){wrap.classList.add('group-drag-target');_updateGhostColor(tgi);}
+          if(!isNaN(tgi)){gh.classList.add('group-drag-target');_drag.hoverWrap={gi:tgi};_updateGhostColor(tgi);}
+        } else {
+          // Scan all wraps: find the one whose vertical range contains ty (or is closest)
+          const allWraps=[...pb.querySelectorAll('.task-bubble-wrap')];
+          let bestWrap=null,bestDist=Infinity;
+          allWraps.forEach(w=>{
+            const r=w.getBoundingClientRect();
+            // Vertical distance: 0 if ty is within the wrap's rows, else distance to nearest edge
+            const vy=ty<r.top?r.top-ty:ty>r.bottom?ty-r.bottom:0;
+            if(vy<bestDist){bestDist=vy;bestWrap=w;}
+          });
+          if(bestWrap&&bestDist<200){
+            const tgi=+bestWrap.dataset.group;
+            if(!isNaN(tgi)){
+              const gapTarget=_getGapInsertTarget(bestWrap,tx,ty,_drag.gi,_drag.ti);
+              if(gapTarget){
+                gapTarget.bel.classList.add(gapTarget.insertBefore?'drag-over-before':'drag-over-after');
+                _drag.hoverBubble=gapTarget.bel;_drag.hoverInsertBefore=gapTarget.insertBefore;
+              } else {
+                bestWrap.classList.add('group-drag-target');
+                _drag.hoverWrap={gi:tgi,appendToEnd:true};
+              }
+              if(!_drag.hoverWrap)_drag.hoverWrap={gi:tgi};
+              _updateGhostColor(tgi);
+            }
+          }
         }
       }
     }
@@ -1406,43 +1473,42 @@ function _installPanelTouchHandler(){
   pb.addEventListener('touchend',ev=>{
     clearTimeout(_drag.lpTimer);_drag.lpTimer=null;
     if(_drag.active){
-      const touch=ev.changedTouches[0];
       const gi=_drag.gi,ti=_drag.ti;
+      const hoverBubble=_drag.hoverBubble;
+      const hoverWrap=_drag.hoverWrap;
+      const hoverTrash=_drag.hoverTrash;
+      const hoverInsertBefore=_drag.hoverInsertBefore;
       _dragCleanup();
       const src=pb.querySelector(`.task-bubble[data-gi="${gi}"][data-ti="${ti}"]`);
-      // Hide src before elementFromPoint so it doesn't block the target
-      if(src)src.style.visibility='hidden';
-      const hit=document.elementFromPoint(touch.clientX,touch.clientY);
-      if(src)src.style.visibility='';
-      if(hit&&gi>=0&&ti>=0&&groups[gi]&&groups[gi].tasks[ti]){
-        const trash=hit.closest('.task-trash-zone');
-        const tb=hit.closest('.task-bubble');
-        const gh=hit.closest('.group-header');
-        const wrap=hit.closest('.task-bubble-wrap');
-        if(trash){
+      if(src)src.style.opacity='';
+
+      if(gi>=0&&ti>=0&&groups[gi]&&groups[gi].tasks[ti]){
+        if(hoverTrash){
           const name=groups[gi].tasks[ti].name;
           groups[gi].tasks.splice(ti,1);
           ls.set(getUserKey('groups'),JSON.stringify(groups));
           renderTaskPanel();showToast(`已删除「${name}」🗑️`);
-        } else if(tb){
-          const tgi=+tb.dataset.gi,tti=+tb.dataset.ti;
+        } else if(hoverBubble){
+          const tgi=+hoverBubble.dataset.gi,tti=+hoverBubble.dataset.ti;
           if(!isNaN(tgi)&&!isNaN(tti)&&!(tgi===gi&&tti===ti)){
             const m=groups[gi].tasks.splice(ti,1)[0];
-            groups[tgi].tasks.splice(tti,0,m);
+            // Recalculate tti after splice (source removal may shift indices in same group)
+            let insertAt=tti;
+            if(tgi===gi&&ti<tti)insertAt=tti-1;
+            if(!hoverInsertBefore)insertAt+=1;
+            groups[tgi].tasks.splice(Math.max(0,insertAt),0,m);
             ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
           }
-        } else if(gh){
-          const tgi=+gh.dataset.gi;
-          if(!isNaN(tgi)&&tgi!==gi){
+        } else if(hoverWrap){
+          const tgi=hoverWrap.gi;
+          if(tgi!==gi){
             const m=groups[gi].tasks.splice(ti,1)[0];
             groups[tgi].tasks.push(m);
             ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
-          }
-        } else if(wrap){
-          const tgi=+wrap.dataset.group;
-          if(!isNaN(tgi)&&tgi!==gi){
+          } else if(hoverWrap.appendToEnd){
+            // Same group, dropped in empty space at end → move to end
             const m=groups[gi].tasks.splice(ti,1)[0];
-            groups[tgi].tasks.push(m);
+            groups[gi].tasks.push(m);
             ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
           }
         }
@@ -1452,6 +1518,7 @@ function _installPanelTouchHandler(){
       if(groups[gi]&&groups[gi].tasks[ti]) toggleTaskActive(gi,ti);
     }
     _drag.gi=-1;_drag.ti=-1;_drag.moved=false;
+    _drag.hoverBubble=null;_drag.hoverWrap=null;_drag.hoverTrash=false;_drag.hoverInsertBefore=true;
   },{passive:true});
 
   pb.addEventListener('touchcancel',()=>{
