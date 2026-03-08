@@ -2745,11 +2745,49 @@ function importData(){
   try{
     const data=JSON.parse(decodeURIComponent(escape(atob(raw))));
     let count=0;
-    for(const [k,v] of Object.entries(data)){
-      if(k.startsWith(KP)){ls.set(k,v);count++;}
+
+    // ── 检测导出数据里的用户名前缀 ──────────────────────────────────────────
+    let srcUserPrefix = null;
+    const kpEsc = KP.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    for (const k of Object.keys(data)) {
+      const m = k.match(new RegExp('^' + kpEsc + 'u_(.+?)_(?:groups|details|mandatory|timestamps|achievements)$'));
+      if (m) { srcUserPrefix = KP + 'u_' + m[1] + '_'; break; }
     }
+
+    // 当前环境的用户前缀
+    const dstUserPrefix = currentUser ? KP + 'u_' + currentUser.username + '_' : null;
+
+    // 用户相关的字段名（需要做前缀映射的）
+    const USER_FIELDS = /^(groups|details|mandatory|timestamps|achievements|\d{4}-\d{2}-\d{2})$/;
+
+    for (const [k, v] of Object.entries(data)) {
+      if (!k.startsWith(KP)) continue;
+      let targetKey = k;
+
+      if (srcUserPrefix && k.startsWith(srcUserPrefix)) {
+        const field = k.slice(srcUserPrefix.length);
+        if (dstUserPrefix) {
+          // 场景②③：来源有用户前缀，目标已登录 → 映射到当前用户（不论用户名是否相同）
+          targetKey = dstUserPrefix + field;
+        } else {
+          // 场景④：来源有用户前缀，目标未登录 → 剥掉前缀写入全局 key
+          targetKey = KP + field;
+        }
+      } else if (!srcUserPrefix && dstUserPrefix) {
+        // 场景⑤：来源无用户前缀，目标已登录 → 用户数据字段加上目标用户前缀
+        const field = k.slice(KP.length);
+        if (USER_FIELDS.test(field)) {
+          targetKey = dstUserPrefix + field;
+        }
+      }
+      // 场景①：来源无用户前缀，目标未登录 → 原样写入，无需处理
+
+      ls.set(targetKey, v);
+      count++;
+    }
+
     closeExportModal();
-    loadAll();load();buildGrid();render();
+    loadAll(); load(); buildGrid(); render();
     showToast(`已导入 ${count} 条数据 ✓`);
   }catch(e){showToast('导出码无效，请重新复制');}
 }

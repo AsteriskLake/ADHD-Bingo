@@ -1,0 +1,18 @@
+{
+  "name": "ADHD Bingo",
+  "short_name": "ADHD Bingo",
+  "description": "用 Bingo 游戏化方式追踪日常任务",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f2f4f8",
+  "theme_color": "#f2f4f8",
+  "orientation": "portrait",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23b39ddb'/><text y='320' x='256' font-size='280' text-anchor='middle' font-family='serif'>🎯</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
