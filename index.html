@@ -35,7 +35,7 @@ body.theme-mono .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){bac
 body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:max(24px,env(safe-area-inset-top)) 16px max(70px,calc(70px + env(safe-area-inset-bottom))) max(16px,env(safe-area-inset-left));color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 
 /* Header */
-.header{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;opacity:0;animation:up .45s ease forwards;}
+.header{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;opacity:0;animation:up .45s ease forwards;transform:translateZ(0);-webkit-transform:translateZ(0);}
 .header-left{flex:1;min-width:0;}
 .title{font-size:1.5rem;font-weight:900;font-family:"PingFang SC","苹方","Noto Sans SC","Microsoft YaHei",sans-serif;color:var(--text);letter-spacing:.02em;cursor:pointer;display:inline-block;border-radius:8px;padding:2px 6px;margin-left:-6px;transition:background .2s;user-select:none;-webkit-user-select:none;}
 .title:hover{background:var(--purple-lt);}
@@ -2019,9 +2019,9 @@ function buildGrid(){
     if(!isEmpty){
       c.addEventListener('mousedown',()=>startPress(pos,c));c.addEventListener('mouseup',()=>cancelPress(c));c.addEventListener('mouseleave',()=>cancelPress(c));
       c.addEventListener('touchstart',e=>{e.preventDefault();startPress(pos,c);},{passive:false});
-      c.addEventListener('touchend',()=>{cancelPress(c);if(!didLongPress)handleTap(pos);});
+      c.addEventListener('touchend',()=>{cancelPress(c);if(!didLongPress){c._touchHandled=true;handleTap(pos);}});
       c.addEventListener('touchmove',()=>cancelPress(c));
-      c.onclick=()=>{if(!didLongPress)handleTap(pos);};
+      c.onclick=()=>{if(c._touchHandled){c._touchHandled=false;return;}if(!didLongPress)handleTap(pos);};
     }
     g.appendChild(c);
   }
@@ -2747,6 +2747,11 @@ updateSizeBtns();
 // Purge any stale timestamps left over from old bugs
 save();
 checkPWAFirstRun();
+// Fix iOS Safari: force opacity:1 on animated elements after animation ends
+// (prevents black rectangle ghost on scroll)
+document.querySelectorAll('.header,.progress-card,.cheer-badge-row,.grid-card,.bottom').forEach(el=>{
+  el.addEventListener('animationend',()=>{el.style.opacity='1';},{once:true});
+});
 // Show login modal if first time (no user set)
 if(!ls.get(K.user)){
   setTimeout(()=>document.getElementById('loginOverlay').style.display='flex',800);
