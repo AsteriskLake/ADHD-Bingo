@@ -310,7 +310,13 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .task-count-hint{font-size:.7rem;color:var(--text-lt);font-weight:600;text-align:center;padding:4px 0 8px;}
 
 /* Group */
-.group-header{display:flex;align-items:center;gap:8px;margin:14px 0 7px;padding:6px 10px;border-radius:10px;border-left:4px solid transparent;}
+.group-header{display:flex;align-items:center;gap:8px;margin:14px 0 7px;padding:6px 10px;border-radius:10px;transition:opacity .2s,transform .15s;}
+.group-order-btn{width:22px;height:22px;border-radius:6px;border:1.5px solid currentColor;background:transparent;font-size:.7rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.55;transition:opacity .15s,background .15s;padding:0;line-height:1;position:relative;}
+.group-order-btn:hover{opacity:1;background:var(--purple-lt);}
+.group-order-menu{position:absolute;top:26px;left:0;background:var(--surface);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18);z-index:500;overflow:hidden;min-width:110px;border:1px solid var(--bg);}
+.group-order-menu-item{padding:8px 14px;font-size:.8rem;font-weight:800;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .12s;}
+.group-order-menu-item:hover{background:var(--purple-lt);}
+.group-order-menu-item.current{color:var(--purple);font-weight:900;}
 .group-name-input{flex:1;font-size:.95rem;font-weight:900;color:var(--text);background:transparent;border:none;outline:none;font-family:"Nunito","Noto Sans SC",sans-serif;-webkit-appearance:none;}
 .group-name-input:focus{background:var(--purple-lt);border-radius:6px;padding:1px 4px;}
 .group-controls{display:flex;align-items:center;gap:4px;flex-shrink:0;}
@@ -331,7 +337,6 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .task-bubble.drag-over-before{border-left:3px solid var(--purple);padding-left:10px;}
 .task-bubble.drag-over-after{border-right:3px solid var(--purple);padding-right:10px;}
 .task-bubble.has-schedule{padding-right:8px;}
-.group-drag-target{outline:2px dashed var(--purple)!important;border-radius:10px;background:var(--purple-lt)!important;}
 /* Schedule indicator dot on bubble */
 .bubble-sched-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);border:1.5px solid #fff;flex-shrink:0;margin-left:-2px;}
 .task-bubble.active-bubble .bubble-sched-dot{background:#fff;border-color:rgba(255,255,255,.5);}
@@ -425,6 +430,10 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .timer-display{font-size:2.6rem;font-weight:900;font-family:system-ui,-apple-system,sans-serif;color:var(--amber-dk);text-align:center;letter-spacing:.06em;margin-bottom:12px;line-height:1;}
 .timer-display.paused{color:var(--text-lt);}
 .timer-sub{font-size:.65rem;font-weight:700;color:var(--text-lt);text-align:center;margin-top:-8px;margin-bottom:10px;min-height:1em;letter-spacing:.02em;}
+.saved-segs-title{font-size:.68rem;font-weight:800;color:var(--text-mid);margin-bottom:5px;padding:0 2px;}
+.saved-seg-item{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:var(--green-lt);border-radius:8px;margin-bottom:4px;}
+.saved-seg-time{font-size:.75rem;font-weight:800;color:var(--green-dk);font-family:"Nunito",system-ui,monospace;}
+.saved-seg-dur{font-size:.68rem;font-weight:700;color:var(--text-mid);}
 .timer-btns{display:flex;gap:8px;}
 .timer-btn{flex:1;padding:10px 6px;border-radius:12px;border:none;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.78rem;font-weight:900;cursor:pointer;transition:all .18s;}
 .timer-btn:active{transform:scale(.96);}
@@ -484,6 +493,10 @@ body.theme-night .timer-widget{background:var(--surface);}
 .history-ts-item{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:.72rem;color:var(--text-mid);font-weight:600;}
 .history-ts-time{color:var(--text-lt);font-size:.68rem;min-width:38px;white-space:nowrap;}
 .history-ts-dur{font-size:.65rem;font-weight:800;color:var(--green-dk);background:var(--green-lt);border-radius:6px;padding:1px 6px;margin-left:4px;flex-shrink:0;}
+.history-ts-header{font-weight:900!important;border-bottom:1px solid var(--bg);padding-bottom:4px;margin-bottom:2px;}
+.history-ts-header .history-ts-time{font-weight:900;color:var(--text)!important;}
+.history-ts-seg{padding-left:10px!important;opacity:.9;}
+.history-ts-seg .history-ts-time{font-size:.72rem;color:var(--text-mid)!important;}
 
 /* Calendar */
 #calSheet{z-index:202;}#calOverlay{z-index:201;}
@@ -777,6 +790,8 @@ body.theme-night .timer-widget{background:var(--surface);}
         <button class="timer-btn timer-btn-done" onclick="timerFinish()">✓ 完成</button>
       </div>
     </div>
+    <!-- Saved segments display -->
+    <div id="savedSegmentsBox" style="display:none;margin-bottom:8px;"></div>
     <!-- Start button row -->
     <div class="detail-row" id="detailStartRow">
       <div><div class="detail-row-label">⏱️ 开始计时</div><div class="detail-row-sub" id="detailStartSub">点击开始计时，或直接填写开始时间</div></div>
@@ -1509,6 +1524,12 @@ const GROUP_COLORS=[
   {border:'#f4967e',bg:'#fdeee9',fg:'#c06040'},
   {border:'#f48fb1',bg:'#fde8ef',fg:'#c0607a'},
 ];
+// 按分组名字哈希取颜色，排序变化不影响颜色
+function getGroupColor(name, seed){
+  let h=0;const key=(seed!=null?name+'__'+seed:name);
+  for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+  return GROUP_COLORS[h%GROUP_COLORS.length];
+}
 
 function openTaskPanel(){
   clearTimeout(tapTimer);tapTimer=null;tapPos=-1;
@@ -1558,20 +1579,21 @@ function renderTaskPanel(){
   hint.textContent=`已选 ${active} 个（Bingo 使用前 ${totalCells()} 个）${schedCount>0?' · '+schedCount+' 个有计划设置 📅':''}`;
   body.appendChild(hint);
   groups.forEach((grp,gi)=>{
-    const gc=GROUP_COLORS[gi%GROUP_COLORS.length];
+    const gc=getGroupColor(grp.name, grp._seed);
     const gh=document.createElement('div');gh.className='group-header';gh.dataset.gi=gi;
-    gh.style.cssText=`border-left-color:${gc.border};background:${gc.bg};`;
+    gh.style.cssText=`background:${gc.bg};`;
     // Count active in group
     const grpActive=grp.tasks.filter(t=>t.active).length;
     const allSel=grpActive===grp.tasks.length;
-    gh.innerHTML=`<span style="color:${gc.border};font-size:.85rem">▸</span><input class="group-name-input" value="${escHtml(grp.name)}" maxlength="20" autocomplete="off" style="color:${gc.fg}" onchange="renameGroup(${gi},this.value)" onblur="renameGroup(${gi},this.value)"/><div class="group-controls"><button class="group-sel-all" onclick="toggleGroupSelect(${gi})" style="background:${allSel?gc.border:'transparent'};color:${allSel?'#fff':gc.fg};border:1.5px solid ${gc.border}">${allSel?'取消':'全选'}</button>${groups.length>1?`<button class="group-del-btn" onclick="deleteGroup(${gi})">✕</button>`:''}</div>`;
+    const orderBtn=groups.length>1?`<button class="group-order-btn" style="color:${gc.fg}" onclick="pickGroupOrder(${gi},this)" title="调整分组顺序">${gi+1}</button>`:'';
+    gh.innerHTML=`${orderBtn}<span style="color:${gc.border};font-size:.85rem">▸</span><input class="group-name-input" value="${escHtml(grp.name)}" maxlength="20" autocomplete="off" style="color:${gc.fg}" onchange="renameGroup(${gi},this.value)" onblur="renameGroup(${gi},this.value)"/><div class="group-controls"><button class="group-sel-all" onclick="toggleGroupSelect(${gi})" style="background:${allSel?gc.border:'transparent'};color:${allSel?'#fff':gc.fg};border:1.5px solid ${gc.border}">${allSel?'取消':'全选'}</button>${groups.length>1?`<button class="group-del-btn" onclick="deleteGroup(${gi})">✕</button>`:''}</div>`;
     body.appendChild(gh);
     const wrap=document.createElement('div');wrap.className='task-bubble-wrap';wrap.dataset.group=gi;
     // Allow dropping onto the group wrap (empty area) on desktop
-    wrap.addEventListener('dragover',e=>{e.preventDefault();wrap.classList.add('group-drag-target');});
+    wrap.addEventListener('dragover',e=>{e.preventDefault();});
     wrap.addEventListener('dragleave',()=>wrap.classList.remove('group-drag-target'));
     wrap.addEventListener('drop',e=>{
-      e.preventDefault();wrap.classList.remove('group-drag-target');
+      e.preventDefault();
       const parts=e.dataTransfer.getData('text/plain').split(',');
       const sgi=parseInt(parts[0]),sti=parseInt(parts[1]);
       if(isNaN(sgi)||isNaN(sti))return;
@@ -1581,20 +1603,7 @@ function renderTaskPanel(){
       groups[tgi].tasks.push(moved);
       ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
     });
-    // Allow dropping onto group header on desktop
-    gh.addEventListener('dragover',e=>{e.preventDefault();gh.classList.add('group-drag-target');});
-    gh.addEventListener('dragleave',()=>gh.classList.remove('group-drag-target'));
-    gh.addEventListener('drop',e=>{
-      e.preventDefault();gh.classList.remove('group-drag-target');
-      const parts=e.dataTransfer.getData('text/plain').split(',');
-      const sgi=parseInt(parts[0]),sti=parseInt(parts[1]);
-      if(isNaN(sgi)||isNaN(sti))return;
-      const tgi=gi;
-      if(sgi===tgi)return;
-      const moved=groups[sgi].tasks.splice(sti,1)[0];
-      groups[tgi].tasks.push(moved);
-      ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
-    });
+
     grp.tasks.forEach((task,ti)=>wrap.appendChild(makeBubbleEl(gi,ti,task,gc)));
     body.appendChild(wrap);
     const addRow=document.createElement('div');addRow.className='task-add-row';
@@ -1603,6 +1612,53 @@ function renderTaskPanel(){
   });
   const agb=document.createElement('button');agb.className='add-group-btn';agb.onclick=addGroup;agb.innerHTML='＋ 新建分组';
   body.appendChild(agb);
+}
+
+// ── Group drag: reorder groups by dragging the ≡ handle ──────────────────────
+
+// ── Group order picker ────────────────────────────────────────────────────────
+function pickGroupOrder(gi, btnEl){
+  if(groups.length<2)return;
+  // Close any open menu first
+  document.querySelectorAll('.group-order-menu').forEach(m=>m.remove());
+  const menu=document.createElement('div');
+  menu.className='group-order-menu';
+  groups.forEach((g,i)=>{
+    if(i===gi)return; // skip current position (no-op)
+    const item=document.createElement('div');
+    item.className='group-order-menu-item';
+    const label=i<gi?'移到第 '+(i+1)+' 位':'移到第 '+(i+1)+' 位';
+    item.innerHTML=`<span style="opacity:.5;font-size:.7rem">${i+1}</span>${escHtml(g.name)} 前`;
+    item.onclick=()=>{
+      menu.remove();
+      const moved=groups.splice(gi,1)[0];
+      const dest=i>gi?i-1:i;
+      groups.splice(dest,0,moved);
+      ls.set(getUserKey('groups'),JSON.stringify(groups));
+      renderTaskPanel();
+    };
+    menu.appendChild(item);
+  });
+  // "移到最后"
+  if(gi<groups.length-1){
+    const last=document.createElement('div');
+    last.className='group-order-menu-item';
+    last.innerHTML=`<span style="opacity:.5;font-size:.7rem">↓</span>移到最后`;
+    last.onclick=()=>{
+      menu.remove();
+      const moved=groups.splice(gi,1)[0];
+      groups.push(moved);
+      ls.set(getUserKey('groups'),JSON.stringify(groups));
+      renderTaskPanel();
+    };
+    menu.appendChild(last);
+  }
+  btnEl.appendChild(menu);
+  // Click outside to close
+  setTimeout(()=>{
+    const close=(e)=>{if(!menu.contains(e.target)){menu.remove();document.removeEventListener('pointerdown',close,true);}};
+    document.addEventListener('pointerdown',close,true);
+  },0);
 }
 
 // ── Bubble drag: single delegated handler on panel body ───────────────────────
@@ -1614,14 +1670,14 @@ function _dragCleanup(){
   _drag.active=false;_drag.moved=false;_drag.lastTargetGi=-1;
   const pb=document.getElementById('taskPanelBody');if(pb)pb.style.overflow='';
   const tz=document.getElementById('trashZone');if(tz)tz.classList.remove('visible','drag-active');
-  document.querySelectorAll('.dragging-bubble,.drag-over-bubble,.group-drag-target').forEach(el=>el.classList.remove('dragging-bubble','drag-over-bubble','group-drag-target'));
+  document.querySelectorAll('.dragging-bubble,.drag-over-bubble').forEach(el=>el.classList.remove('dragging-bubble','drag-over-bubble'));
 }
 
 // Update ghost color to match target group
 function _updateGhostColor(targetGi){
   if(!_drag.ghost||targetGi===_drag.lastTargetGi)return;
   _drag.lastTargetGi=targetGi;
-  const gc=GROUP_COLORS[targetGi%GROUP_COLORS.length];
+  const gc=getGroupColor(groups[targetGi]?.name||'', groups[targetGi]?._seed);
   _drag.ghost.style.background=gc.border;
   _drag.ghost.style.color='#fff';
   _drag.ghost.style.borderColor=gc.fg;
@@ -1772,7 +1828,7 @@ function _installPanelTouchHandler(){
       const hit=document.elementFromPoint(touch.clientX,touch.clientY);
       _drag.ghost.style.visibility='';
 
-      document.querySelectorAll('.drag-over-bubble,.drag-over-before,.drag-over-after,.drag-active,.group-drag-target').forEach(el=>el.classList.remove('drag-over-bubble','drag-over-before','drag-over-after','drag-active','group-drag-target'));
+      document.querySelectorAll('.drag-over-bubble,.drag-over-before,.drag-over-after,.drag-active').forEach(el=>el.classList.remove('drag-over-bubble','drag-over-before','drag-over-after','drag-active'));
       _drag.hoverBubble=null;_drag.hoverWrap=null;_drag.hoverTrash=false;_drag.hoverInsertBefore=true;
 
       const tx=touch.clientX,ty=touch.clientY;
@@ -2006,7 +2062,11 @@ function deleteGroup(gi){
     groups.splice(gi,1);ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
   });
 }
-function addGroup(){groups.push({name:'新分组',tasks:[]});ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();}
+function addGroup(){
+  // _seed 保证即使同名分组颜色也不同
+  groups.push({name:'新分组',tasks:[],_seed:Date.now()%1000});
+  ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+}
 function addTaskToGroup(gi,inp){const n=inp.value.trim();if(!n)return;groups[gi].tasks.push({name:n,active:true});inp.value='';ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();inp.focus();}
 function selectAllTasks(val){groups.forEach(g=>g.tasks.forEach(t=>{if(!taskHasSchedule(t))t.active=val;}));ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();}
 function applyTaskSelection(){order=[...Array(totalCells()).keys()];state=Array(totalCells()).fill(false);prevLines=0;save();closeTaskPanel();buildGrid();render();showToast('任务列表已更新 ✓');}
@@ -2144,6 +2204,8 @@ function openDetail(pos){
   document.getElementById('inheritTodoBtn').style.display=hasPastTodos?'inline-flex':'none';
   // Populate completion time row
   const existingTS=(timestamps[activeDate()]||[]).find(e=>e.name===taskName);
+  // Show already-saved segments if any
+  setTimeout(()=>_renderSavedSegments(taskName),0);
   const timeInput=document.getElementById('detailTimeInput');
   timeInput.value=existingTS?existingTS.time:'';
   if(!timeInput.value){const n=new Date();timeInput.value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;}
@@ -2218,15 +2280,64 @@ function timerPause(){
   _timerTick();
 }
 function timerFinish(){
-  // Finalize counts before stopping
+  // Finalize counts
   const segSecs=Math.floor((Date.now()-_timerSegStart)/1000);
   if(_timerRunning)_timerFocusSecs+=segSecs; else _timerPauseSecs+=segSecs;
-  _timerLastFocusSecs=_timerFocusSecs;
+  const focusSecs=_timerFocusSecs;
+  const startHHMM=document.getElementById('detailStartTimeInput').value;
+  const endHHMM=nowHHMM();
   _timerStop_internal();
-  document.getElementById('detailTimeInput').value=nowHHMM();
+
+  // ── 自动保存这一段到 timestamps ──────────────────────────────────────
+  if(detailPos>=0&&startHHMM){
+    const taskName=getTaskName(detailPos);
+    const d=activeDate();
+    if(!timestamps[d])timestamps[d]=[];
+    let entry=timestamps[d].find(e=>e.name===taskName);
+    if(!entry){entry={name:taskName,time:endHHMM};timestamps[d].push(entry);}
+    // segments 数组存多段
+    if(!entry.segments)entry.segments=[];
+    entry.segments.push({start:startHHMM,end:endHHMM,focusSecs});
+    // time 始终更新为最新完成时间
+    entry.time=endHHMM;
+    // 同步任务状态为完成
+    if(!state[detailPos]){state[detailPos]=true;recordTS(taskName);}
+    ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
+    save();render();buildGrid();checkAchievements();
+  }
+
+  // ── 更新 detail 面板 UI（不关闭，允许继续计时）────────────────────────
   document.getElementById('detailDoneToggle').checked=true;
+  document.getElementById('detailTimeInput').value=endHHMM;
   document.getElementById('detailTimeRow').style.display='flex';
-  showToast('计时完成 ✓ 已填写完成时间');
+  // 清空开始时间，准备下一段
+  document.getElementById('detailStartTimeInput').value='';
+  document.getElementById('detailStartTimeRow').style.display='none';
+  // 显示已保存的段列表
+  _renderSavedSegments(getTaskName(detailPos));
+  showToast('已自动保存 ✓ 可继续计时');
+}
+
+// 在 detail 面板内渲染已保存的段
+function _renderSavedSegments(taskName){
+  let box=document.getElementById('savedSegmentsBox');
+  if(!box)return;
+  const d=activeDate();
+  const entry=(timestamps[d]||[]).find(e=>e.name===taskName);
+  const segs=(entry&&entry.segments)||[];
+  if(!segs.length){box.style.display='none';return;}
+  const fmt=m=>m>=60?Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0')+'m':''):m+'m';
+  box.style.display='block';
+  box.innerHTML='<div class="saved-segs-title">本次已记录</div>'+segs.map((s,i)=>{
+    const [sh,sm]=s.start.split(':').map(Number);
+    const [eh,em]=s.end.split(':').map(Number);
+    let totalMins=(eh*60+em)-(sh*60+sm);if(totalMins<0)totalMins+=1440;
+    const focusMins=Math.round((s.focusSecs||0)/60);
+    const pauseMins=totalMins-focusMins;
+    let detail='专注 '+fmt(focusMins);
+    if(pauseMins>0)detail+=' · 暂停 '+fmt(pauseMins);
+    return `<div class="saved-seg-item"><span class="saved-seg-time">${s.start} → ${s.end}</span><span class="saved-seg-dur">${detail}</span></div>`;
+  }).join('');
 }
 function timerCancel(){
   _timerLastFocusSecs=0;
@@ -2431,6 +2542,26 @@ function openHistory(){
     const ts=timestamps[e.dateStr]||[];
     const item=document.createElement('div');item.className='history-item';
     item.innerHTML=`<div class="history-item-header"><div class="history-date-block" data-date="${e.dateStr}"><div class="history-month">${isToday?'今天':M[dt.getMonth()]}</div><div class="history-day">${dt.getDate()}</div><div class="history-weekday">${W[dt.getDay()]}</div></div><div class="history-info"><div class="history-pct">${pct}% 完成</div><div class="history-sub">勾选了 ${done} 项${lines>0?` · ${lines} 条连线`:''}</div><div class="history-bar-bg"><div class="history-bar-fill" style="width:${Math.min(pct,100)}%"></div></div></div><div class="history-bingo ${lines>0?'show':''}">BINGO</div></div>${ts.length?`<div class="history-expand" onclick="this.nextElementSibling.classList.toggle('open')">▶ 查看完成时间 (${ts.length})</div><div class="history-timestamps">${ts.map(t=>{
+      const fmt=m=>m>=60?Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0')+'m':''):m+'m';
+      // Multi-segment support
+      if(t.segments&&t.segments.length){
+        // Header row: task name + total focus time
+        const totalFocusSecs=t.segments.reduce((a,s)=>a+(s.focusSecs||0),0);
+        const totalFocusMins=Math.round(totalFocusSecs/60);
+        const header='<div class="history-ts-item history-ts-header"><span class="history-ts-time">'+escHtml(t.name)+'</span><span class="history-ts-dur">共专注 '+fmt(totalFocusMins)+'</span></div>';
+        const segRows=t.segments.map(s=>{
+          const [sh,sm]=s.start.split(':').map(Number);
+          const [eh,em]=s.end.split(':').map(Number);
+          let totalMins=(eh*60+em)-(sh*60+sm);if(totalMins<0)totalMins+=1440;
+          const focusMins=Math.round((s.focusSecs||0)/60);
+          const pauseMins=totalMins-focusMins;
+          let dur='专注 '+fmt(focusMins);
+          if(pauseMins>0)dur+=' · 暂停 '+fmt(pauseMins);
+          return '<div class="history-ts-item history-ts-seg"><span class="history-ts-time">'+s.start+' → '+s.end+'</span><span class="history-ts-dur">'+dur+'</span></div>';
+        }).join('');
+        return header+segRows;
+      }
+      // Legacy single entry
       let timeStr=t.time||'';
       let extra='';
       if(t.startTime&&t.time){
@@ -2438,7 +2569,6 @@ function openHistory(){
         const [eh,em]=t.time.split(':').map(Number);
         let totalMins=(eh*60+em)-(sh*60+sm);
         if(totalMins<0)totalMins+=1440;
-        const fmt=m=>m>=60?Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0')+'m':''):m+'m';
         timeStr=t.startTime+' → '+t.time;
         if(t.focusSecs!=null){
           const focusMins=Math.round(t.focusSecs/60);
