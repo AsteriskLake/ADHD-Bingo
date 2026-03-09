@@ -8,7 +8,7 @@
 <title>ADHD Bingo</title>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-QSJH4PNR3R"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QSJH4PNR3R');</script>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&family=Orbitron:wght@700;900&family=Abril+Fatface&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -32,12 +32,191 @@ body.theme-mono{
 }
 body.theme-mono .progress-bar-fill{background:linear-gradient(90deg,#888,#444,#222)!important;}
 body.theme-mono .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){background:#e4e4e4!important;color:#555!important;}
+
+
+/* ── 🌊 深海蓝 ── */
+body.theme-ocean{
+  --bg:#0d1b2a;--surface:#152336;
+  --done:#4dd0e1;--done-dk:#00acc1;--done-lt:#1a3a45;
+  --green:#4db6ac;--green-dk:#00897b;--green-lt:#1a3535;
+  --amber:#ffca28;--amber-dk:#f9a825;--amber-lt:#2d2510;
+  --purple:#9575cd;--purple-lt:#221838;
+  --coral:#ef5350;--coral-lt:#2d1515;
+  --text:#e0f4ff;--text-mid:#7ab8d4;--text-lt:#3d6880;
+  --shadow:0 2px 18px rgba(0,0,0,.4),0 1px 4px rgba(0,0,0,.3);
+}
+body.theme-ocean .progress-bar-fill{background:linear-gradient(90deg,#4dd0e1,#4db6ac,#ffca28)!important;}
+body.theme-ocean .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){background:#1c2f42!important;color:#5090b0!important;}
+body.theme-ocean .cell.locked{background:#111d28!important;color:#2d4a60!important;}
+body.theme-ocean .title:hover{background:var(--purple-lt);}
+
+
+/* ── 🌿 抹茶绿 ── */
+body.theme-matcha{
+  --bg:#f0f5ee;--surface:#f8fbf6;
+  --done:#7bba8e;--done-dk:#3d7a52;--done-lt:#dff0e5;
+  --green:#5aaa7a;--green-dk:#2d7a4a;--green-lt:#d8eedd;
+  --amber:#c8b560;--amber-dk:#8a7a20;--amber-lt:#f5f0d0;
+  --purple:#7aab8a;--purple-lt:#e5f0e8;
+  --coral:#c87a6a;--coral-lt:#f5e8e5;
+  --text:#1a2d1e;--text-mid:#4a6a50;--text-lt:#8aaa90;
+  --shadow:0 2px 14px rgba(40,80,40,.08),0 1px 3px rgba(40,80,40,.04);
+}
+body.theme-matcha .progress-bar-fill{background:linear-gradient(90deg,#a0d0a0,#7bba8e,#5aaa7a)!important;}
+body.theme-matcha .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){background:#e2eedf!important;color:#4a7a55!important;}
+
+
+
+/* ── ⚡ 赛博朋克 2077 ── */
+body.theme-cyber{
+  --bg:#0d0d0d;--surface:#141414;
+  --done:#f5e642;--done-dk:#c8a800;--done-lt:#1a1700;
+  --green:#00e5ff;--green-dk:#0099bb;--green-lt:#001820;
+  --amber:#ff3c6e;--amber-dk:#cc0040;--amber-lt:#1f0010;
+  --purple:#ff3c6e;--purple-lt:#1f0010;
+  --coral:#ff8c00;--coral-lt:#1f1000;
+  --text:#f0ead0;--text-mid:#a09060;--text-lt:#3a3020;
+  --shadow:0 2px 12px rgba(0,0,0,.8),0 1px 3px rgba(0,0,0,.6);
+}
+/* 2077 斜切角格子效果 */
+body.theme-cyber .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){
+  background:#1c1c1c!important;
+  color:#f5e642!important;
+  border:1px solid #2a2a1a!important;
+  border-radius:4px!important;
+  font-weight:900!important;
+  letter-spacing:.01em;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+}
+body.theme-cyber .cell.active{
+  background:#f5e642!important;
+  color:#0d0d0d!important;
+  border-color:#c8a800!important;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+  box-shadow:0 0 18px rgba(245,230,66,.6),0 0 6px rgba(245,230,66,.9)!important;
+}
+body.theme-cyber .cell.bingo-line{
+  background:#00e5ff!important;
+  color:#0d0d0d!important;
+  border-color:#0099bb!important;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+  box-shadow:0 0 20px rgba(0,229,255,.65),0 0 6px rgba(0,229,255,.9)!important;
+}
+body.theme-cyber .cell.locked{
+  background:#111!important;color:#2a2a18!important;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+}
+body.theme-cyber .cell.mandatory{
+  border-color:#ff3c6e!important;
+}
+body.theme-cyber .grid-card{
+  background:#0d0d0d;
+  border:1px solid #2a2a1a;
+  border-radius:6px!important;
+}
+body.theme-cyber .progress-card{
+  background:#141414;border:1px solid #2a2a1a;
+}
+body.theme-cyber .btn-icon{
+  background:#1c1c1c;border:1px solid #2a2a1a;color:#f5e642;
+}
+body.theme-cyber .progress-bar-fill{background:linear-gradient(90deg,#f5e642,#ff8c00,#ff3c6e)!important;}
+/* 2077 黄色扫描线叠加 */
+body.theme-cyber .grid-card::before{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:6px;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(245,230,66,.018) 3px,rgba(245,230,66,.018) 4px);
+  z-index:0;
+}
+body.theme-cyber .grid-card{position:relative;}
+body.theme-cyber .grid{position:relative;z-index:1;}
+
+/* ── 🌃 蒸汽波 ── */
+body.theme-vapor{
+  --bg:#1a0a2e;--surface:#241040;
+  --done:#ff71ce;--done-dk:#cc3399;--done-lt:#2d0a20;
+  --green:#01cdfe;--green-dk:#0099cc;--green-lt:#001a22;
+  --amber:#fffb96;--amber-dk:#cccc00;--amber-lt:#1a1a00;
+  --purple:#b967ff;--purple-lt:#1e0033;
+  --coral:#fe8019;--coral-lt:#1f0e00;
+  --text:#ffe0ff;--text-mid:#cc88cc;--text-lt:#553366;
+  --shadow:0 4px 24px rgba(185,103,255,.2),0 2px 8px rgba(0,0,0,.5);
+}
+body.theme-vapor .progress-bar-fill{background:linear-gradient(90deg,#ff71ce,#b967ff,#01cdfe)!important;}
+body.theme-vapor .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){
+  background:#1e0c36!important;color:#7755aa!important;
+}
+body.theme-vapor .cell.active{
+  box-shadow:0 0 14px rgba(255,113,206,.45),0 4px 12px rgba(255,113,206,.3)!important;
+}
+body.theme-vapor .cell.bingo-line{
+  box-shadow:0 0 16px rgba(1,205,254,.5),0 4px 12px rgba(1,205,254,.3)!important;
+}
+body.theme-vapor .progress-card,body.theme-vapor .grid-card{
+  border:1px solid #3d1a5e;
+}
+body.theme-vapor .title{
+  background:linear-gradient(90deg,#ff71ce,#b967ff,#01cdfe);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  font-family:"Abril Fatface","Nunito",cursive!important;
+  font-size:1.6rem!important;font-weight:400!important;letter-spacing:.04em;
+}
+body.theme-vapor .cell.locked{background:#110820!important;color:#2a1040!important;}
+
+/* ── 🍵 禅意 ── */
+body.theme-zen{
+  --bg:#f7f4ee;--surface:#fdfaf5;
+  --done:#8b7355;--done-dk:#5c4a2a;--done-lt:#ede8df;
+  --green:#6b8c6b;--green-dk:#3d5c3d;--green-lt:#e4eee4;
+  --amber:#c4a35a;--amber-dk:#8a6a20;--amber-lt:#f5edd8;
+  --purple:#9b8ea0;--purple-lt:#ece8f0;
+  --coral:#b07060;--coral-lt:#f0e4e0;
+  --text:#2a2018;--text-mid:#7a6858;--text-lt:#b8a898;
+  --shadow:0 1px 8px rgba(80,60,30,.08),0 1px 2px rgba(80,60,30,.04);
+}
+body.theme-zen .progress-bar-fill{background:linear-gradient(90deg,#c4a35a,#8b7355,#6b8c6b)!important;}
+body.theme-zen .cell:not(.active):not(.bingo-line):not(.locked):not(.empty){
+  background:#efe9df!important;color:#9a8870!important;
+}
+body.theme-zen .progress-card,body.theme-zen .grid-card,body.theme-zen .btn-icon{
+  box-shadow:0 1px 6px rgba(80,60,30,.07)!important;
+}
+body.theme-zen .cell{border-radius:8px!important;}
+body.theme-zen .grid-card{border-radius:16px!important;}
+
+/* ── 各主题标题字体 ── */
+/* 默认：PingFang/Noto（不变，已在 .title 里） */
+body.theme-ocean .title{
+  font-family:"Orbitron","Nunito",sans-serif!important;
+  font-size:1.25rem!important;letter-spacing:.08em;
+  color:#4dd0e1;text-shadow:0 0 12px rgba(77,208,225,.5);
+}
+body.theme-matcha .title{
+  font-family:"Noto Serif SC","Noto Sans SC","PingFang SC",serif!important;
+  font-weight:700!important;letter-spacing:.06em;color:#3d7a52;
+}
+body.theme-mono .title{
+  font-family:"Courier New",Courier,monospace!important;
+  font-weight:900!important;letter-spacing:.03em;color:#222;
+}
+body.theme-cyber .title{
+  font-family:"Orbitron","Nunito",sans-serif!important;
+  font-size:1.15rem!important;font-weight:900!important;
+  letter-spacing:.12em;color:#f5e642;
+  text-shadow:0 0 8px rgba(245,230,66,.7),0 0 20px rgba(245,230,66,.3);
+  text-transform:uppercase;
+}
+
+body.theme-zen .title{
+  font-family:"Noto Serif SC","STSong","SimSun",serif!important;
+  font-weight:700!important;letter-spacing:.18em;color:#5c4a2a;
+  font-size:1.35rem!important;
+}
 body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:max(24px,env(safe-area-inset-top)) 16px max(70px,calc(70px + env(safe-area-inset-bottom))) max(16px,env(safe-area-inset-left));color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 
 /* Header */
 .header{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;animation:up-stable .45s ease forwards;transform:translateZ(0);-webkit-transform:translateZ(0);}
 .header-left{flex:1;min-width:0;}
-.title{font-size:1.5rem;font-weight:900;font-family:"PingFang SC","苹方","Noto Sans SC","Microsoft YaHei",sans-serif;color:var(--text);letter-spacing:.02em;cursor:pointer;display:inline-block;border-radius:8px;padding:2px 6px;margin-left:-6px;transition:background .2s;user-select:none;-webkit-user-select:none;}
+.title{font-size:1.5rem;font-weight:900;font-family:"PingFang SC","苹方","Noto Sans SC","Microsoft YaHei",sans-serif;color:var(--text);letter-spacing:.02em;cursor:pointer;display:inline-block;border-radius:8px;padding:2px 6px;margin-left:-6px;transition:background .2s,color .3s,font-family .1s,letter-spacing .2s,text-shadow .3s;user-select:none;-webkit-user-select:none;}
 .title:hover{background:var(--purple-lt);}
 .date-line{font-size:.73rem;font-weight:600;color:var(--text-lt);margin-top:2px;}
 /* viewing-date banner */
@@ -240,6 +419,33 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .todo-add-btn{width:38px;height:38px;border-radius:10px;border:none;background:var(--purple);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .detail-save-btn{width:100%;padding:14px;border-radius:14px;border:none;background:var(--purple);color:#fff;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-top:18px;}
 .detail-save-btn:active{transform:scale(.97);}
+/* Timer widget */
+.timer-widget{background:linear-gradient(135deg,var(--amber-lt),#fff9f0);border:2px solid var(--amber);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:none;}
+.timer-widget.show{display:block;}
+.timer-display{font-size:2.4rem;font-weight:900;font-family:"Nunito",monospace;color:var(--amber-dk);text-align:center;letter-spacing:.04em;margin-bottom:12px;line-height:1;}
+.timer-display.paused{color:var(--text-lt);}
+.timer-btns{display:flex;gap:8px;}
+.timer-btn{flex:1;padding:10px 6px;border-radius:12px;border:none;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.78rem;font-weight:900;cursor:pointer;transition:all .18s;}
+.timer-btn:active{transform:scale(.96);}
+.timer-btn-pause{background:var(--bg);color:var(--text-mid);}
+.timer-btn-done{background:var(--green);color:#fff;}
+.timer-btn-cancel{background:var(--coral-lt);color:#c05040;}
+/* now-btn beside time inputs */
+.time-row-inner{display:flex;align-items:center;gap:6px;}
+.now-btn{padding:5px 9px;border-radius:8px;border:1.5px solid var(--text-lt);background:var(--surface);font-size:.68rem;font-weight:800;color:var(--text-mid);cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0;}
+.now-btn:hover{border-color:var(--done);color:var(--done-dk);}
+/* Daily notes/todos history */
+.daily-hist-toggle{font-size:.72rem;font-weight:800;color:var(--done-dk);cursor:pointer;padding:4px 10px;background:var(--done-lt);border-radius:99px;border:none;display:inline-flex;align-items:center;gap:4px;transition:all .18s;margin-bottom:8px;}
+.daily-hist-toggle:hover{background:var(--done);color:#fff;}
+.daily-hist-list{display:none;margin-bottom:8px;}
+.daily-hist-list.open{display:block;}
+.daily-hist-entry{background:var(--bg);border-radius:12px;padding:10px 14px;margin-bottom:6px;font-size:.8rem;}
+.daily-hist-date{font-size:.68rem;font-weight:900;color:var(--done-dk);margin-bottom:6px;}
+.daily-hist-notes{color:var(--text);font-weight:600;white-space:pre-wrap;margin-bottom:4px;}
+.daily-hist-todo{display:flex;align-items:center;gap:6px;color:var(--text-mid);font-weight:600;padding:2px 0;}
+.daily-hist-todo.d{color:var(--text-lt);text-decoration:line-through;}
+.inherit-btn{width:100%;padding:9px;border-radius:12px;border:1.5px dashed var(--purple);background:var(--purple-lt);color:#7b5ea7;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;margin-top:6px;transition:all .18s;}
+.inherit-btn:hover{background:var(--purple);color:#fff;}
 
 /* History */
 .history-list{overflow-y:auto;padding:0 16px;flex:1;}
@@ -261,7 +467,8 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .history-timestamps{margin-top:8px;border-top:1px solid rgba(0,0,0,.06);padding-top:6px;display:none;}
 .history-timestamps.open{display:block;}
 .history-ts-item{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:.72rem;color:var(--text-mid);font-weight:600;}
-.history-ts-time{color:var(--text-lt);font-size:.68rem;min-width:38px;flex-shrink:0;line-height:1.4;}
+.history-ts-time{color:var(--text-lt);font-size:.68rem;min-width:38px;white-space:nowrap;}
+.history-ts-dur{font-size:.65rem;font-weight:800;color:var(--green-dk);background:var(--green-lt);border-radius:6px;padding:1px 6px;margin-left:4px;flex-shrink:0;}
 
 /* Calendar */
 #calSheet{z-index:202;}#calOverlay{z-index:201;}
@@ -545,23 +752,48 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
       <div><div class="detail-row-label">标记为完成</div></div>
       <label class="toggle-switch"><input type="checkbox" id="detailDoneToggle" onchange="toggleDetailTimeRow()"/><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
     </div>
+    <!-- Timer widget (shows when running) -->
+    <div class="timer-widget" id="timerWidget">
+      <div class="timer-display" id="timerDisplay">00:00</div>
+      <div class="timer-btns">
+        <button class="timer-btn timer-btn-cancel" onclick="timerCancel()">✕ 取消</button>
+        <button class="timer-btn timer-btn-pause" id="timerPauseBtn" onclick="timerPause()">⏸ 暂停</button>
+        <button class="timer-btn timer-btn-done" onclick="timerFinish()">✓ 完成</button>
+      </div>
+    </div>
+    <!-- Start button row -->
     <div class="detail-row" id="detailStartRow">
-      <div><div class="detail-row-label">▶ 开始计时</div><div class="detail-row-sub" id="detailStartSub">记录本次任务的开始时间</div></div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="time" id="detailStartInput" style="border:2px solid var(--amber);border-radius:10px;padding:6px 10px;font-size:.88rem;font-weight:800;color:var(--text);background:var(--amber-lt);outline:none;font-family:inherit;-webkit-appearance:none;display:none;"/>
-        <button id="detailStartBtn" onclick="startTaskTimer()" style="padding:7px 13px;border-radius:10px;border:none;background:var(--amber);color:#fff;font-family:inherit;font-size:.78rem;font-weight:800;cursor:pointer;">开始</button>
+      <div><div class="detail-row-label">⏱️ 开始计时</div><div class="detail-row-sub" id="detailStartSub">点击开始计时，或直接填写开始时间</div></div>
+      <button id="detailStartBtn" onclick="timerStart()" style="padding:7px 14px;border-radius:10px;border:2px solid var(--amber);background:var(--amber-lt);color:var(--amber-dk);font-family:inherit;font-size:.82rem;font-weight:900;cursor:pointer;white-space:nowrap;transition:all .18s;">▶ 开始</button>
+    </div>
+    <div class="detail-row" id="detailStartTimeRow" style="display:none;">
+      <div><div class="detail-row-label">🕐 开始时间</div><div class="detail-row-sub">可手动修改</div></div>
+      <div class="time-row-inner">
+        <button class="now-btn" onclick="setNow('detailStartTimeInput')">现在</button>
+        <input type="time" id="detailStartTimeInput" style="border:2px solid var(--amber);border-radius:10px;padding:6px 10px;font-size:.88rem;font-weight:800;color:var(--text);background:var(--amber-lt);outline:none;font-family:inherit;-webkit-appearance:none;"/>
       </div>
     </div>
     <div class="detail-row" id="detailTimeRow" style="display:none;">
-      <div><div class="detail-row-label">⏰ 完成时间</div><div class="detail-row-sub">修改打卡时间记录</div></div>
-      <input type="time" id="detailTimeInput" style="border:2px solid var(--done);border-radius:10px;padding:6px 10px;font-size:.88rem;font-weight:800;color:var(--text);background:var(--done-lt);outline:none;font-family:inherit;-webkit-appearance:none;"/></div>
+      <div><div class="detail-row-label">⏰ 完成时间</div><div class="detail-row-sub">可手动修改</div></div>
+      <div class="time-row-inner">
+        <button class="now-btn" onclick="setNow('detailTimeInput')">现在</button>
+        <input type="time" id="detailTimeInput" style="border:2px solid var(--done);border-radius:10px;padding:6px 10px;font-size:.88rem;font-weight:800;color:var(--text);background:var(--done-lt);outline:none;font-family:inherit;-webkit-appearance:none;"/>
+      </div>
+    </div>
     <div class="detail-row">
       <div><div class="detail-row-label">🔒 强制完成</div><div class="detail-row-sub">未完成时其他格子将被锁住</div></div>
       <label class="toggle-switch mandatory-toggle"><input type="checkbox" id="detailMandatoryToggle"/><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
     </div>
-    <div class="detail-section-label">📝 备注</div>
+    <div class="detail-section-label">📝 今日备注</div>
     <textarea class="detail-notes" id="detailNotes" placeholder="记录今天做了什么、有什么感受…" rows="3" autocomplete="off"></textarea>
-    <div class="detail-section-label">✅ 子任务清单</div>
+    <div id="dailyHistSection" style="display:none;">
+      <button class="daily-hist-toggle" id="dailyHistToggleBtn" onclick="toggleDailyHist()">▶ 查看往期备注</button>
+      <div class="daily-hist-list" id="dailyHistList"></div>
+    </div>
+    <div class="detail-section-label" style="display:flex;align-items:center;justify-content:space-between;flex-direction:row;">
+      <span>✅ 今日子任务</span>
+      <button class="inherit-btn" id="inheritTodoBtn" onclick="inheritTodos()" style="width:auto;padding:4px 10px;font-size:.68rem;margin-top:0;border-radius:8px;">继承上次清单</button>
+    </div>
     <div class="todo-list" id="todoList"></div>
     <div class="todo-add-row">
       <input class="todo-add-input" id="todoAddInput" placeholder="添加子任务…" maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter')addTodo()"/>
@@ -812,6 +1044,23 @@ function runMigration(){
       if(changed)ls.set(dKey,JSON.stringify(newDets));
     });
   }catch(e){console.warn('Migration v3 error:',e);}
+  // v3.1.0: migrate flat details {taskName:{notes,todos}} to per-day format
+  try{
+    const dKey=getUserKey('details');
+    const raw=ls.get(dKey)||ls.get(KP+'details');
+    if(raw){
+      const dets=JSON.parse(raw);let changed=false;
+      for(const [k,v] of Object.entries(dets)){
+        if(typeof v.notes==='string'&&!v.byDate){
+          // Legacy: flat format → move to a "before migration" pseudo-date entry
+          const pseudo='0000-00-00'; // special sentinel, shows in history
+          dets[k]={byDate:{[pseudo]:{notes:v.notes,todos:v.todos||[]}},template:{todos:(v.todos||[]).map(t=>({text:t.text,done:false}))}};
+          changed=true;
+        }
+      }
+      if(changed){ls.set(dKey,JSON.stringify(dets));ls.set(KP+'details',JSON.stringify(dets));}
+    }
+  }catch(e){console.warn('Migration details error:',e);}
   ls.set(K.ver,APP_VERSION);
 }
 function load(){
@@ -896,24 +1145,12 @@ function saveUserData(){
   ls.set(getUserKey('details'),JSON.stringify(details));
   ls.set(getUserKey('mandatory'),JSON.stringify([...mandatory]));
 }
-
-// ── Duration helper ────────────────────────────────────────────────────────────
-function calcDuration(startTime, endTime) {
-  if (!startTime || !endTime) return null;
-  const [sh, sm] = startTime.split(':').map(Number);
-  const [eh, em] = endTime.split(':').map(Number);
-  const diff = (eh * 60 + em) - (sh * 60 + sm);
-  if (diff <= 0) return null;
-  if (diff < 60) return diff + '分钟';
-  return Math.floor(diff / 60) + '小时' + (diff % 60 ? (diff % 60) + '分' : '');
-}
-function recordTS(name,startTime){
+function recordTS(name){
   const d=activeDate();if(!timestamps[d])timestamps[d]=[];
   const n=new Date(),t=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
   const idx=timestamps[d].findIndex(e=>e.name===name);
-  const entry=idx>=0?timestamps[d][idx]:(timestamps[d].push({name,time:t}),timestamps[d][timestamps[d].length-1]);
-  if(idx>=0)entry.time=t;
-  if(startTime)entry.startTime=startTime;
+  if(idx>=0)timestamps[d][idx].time=t; // preserve existing startTime
+  else timestamps[d].push({name,time:t});
   ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
 }
 function removeTS(name){
@@ -993,8 +1230,51 @@ function getTaskName(pos){
   const a=getActiveTasks(),idx=order[pos];
   return (idx<a.length)?a[idx]:'';
 }
-function getDetail(taskName){return details[taskName]||{notes:'',todos:[]};}
-function hasNoteOrTodo(taskName){const d=getDetail(taskName);return d.notes.trim()!==''||(d.todos&&d.todos.length>0);}
+// details structure: {taskName: {byDate: {'2025-01-01':{notes,todos}}, template:{todos:[]}}}
+// getDetail returns today's (or viewed day's) entry
+function getDetailDay(taskName, dateStr){
+  const rec=details[taskName];
+  if(!rec)return{notes:'',todos:[]};
+  // legacy format (flat {notes,todos}) → treat as template only, today is empty
+  if(typeof rec.notes==='string')return{notes:'',todos:[]};
+  return (rec.byDate&&rec.byDate[dateStr])||{notes:'',todos:[]};
+}
+function getDetail(taskName){return getDetailDay(taskName,activeDate());}
+function getDetailTemplate(taskName){
+  const rec=details[taskName];
+  if(!rec)return{todos:[]};
+  if(typeof rec.notes==='string')return{todos:rec.todos||[]};
+  return rec.template||{todos:[]};
+}
+function hasNoteOrTodo(taskName){
+  const d=getDetail(taskName);
+  return d.notes.trim()!==''||(d.todos&&d.todos.length>0);
+}
+// Save daily entry for taskName
+function saveDetailDay(taskName,dateStr,notes,todos){
+  if(!details[taskName]||typeof details[taskName].notes==='string'){
+    // migrate legacy flat record to template
+    const old=details[taskName]||{};
+    details[taskName]={byDate:{},template:{todos:(old.todos||[]).map(t=>({text:t.text,done:false}))}};
+  }
+  if(!details[taskName].byDate)details[taskName].byDate={};
+  details[taskName].byDate[dateStr]={notes,todos};
+  ls.set(getUserKey('details'),JSON.stringify(details));
+}
+// Get all past daily entries for a taskName (sorted newest first, excluding today)
+function getPastDailyEntries(taskName){
+  const rec=details[taskName];
+  if(!rec||typeof rec.notes==='string')return[];
+  const today=activeDate();
+  const entries=Object.entries(rec.byDate||{})
+    .filter(([d,v])=>d!==today&&d!=='0000-00-00'&&(v.notes||v.todos?.length))
+    .sort((a,b)=>b[0].localeCompare(a[0]));
+  // Also include legacy migration entry (pseudo 0000-00-00) as '历史记录'
+  const rec2=details[taskName];
+  const legacyEntry=rec2&&rec2.byDate&&rec2.byDate['0000-00-00'];
+  const legacyArr=(legacyEntry&&(legacyEntry.notes||legacyEntry.todos?.length))?[{dateStr:'历史记录',notes:legacyEntry.notes||'',todos:legacyEntry.todos||[]}]:[];
+  return [...entries.map(([d,v])=>({dateStr:d,...v})),...legacyArr];
+}
 
 // ── Viewing date ──────────────────────────────────────────────────────────────
 function setViewingDate(ds){
@@ -1098,15 +1378,45 @@ function updateSizeBtns(){
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
+// ── Themes ────────────────────────────────────────────────────────────────────
+const THEMES=[
+  {id:'color',  label:'默认',   emoji:'🎨'},
+  {id:'matcha', label:'抹茶绿', emoji:'🌿'},
+  {id:'ocean',  label:'深海蓝', emoji:'🌊'},
+  {id:'mono',   label:'单色',   emoji:'⬜'},
+  {id:'cyber',  label:'赛博朋克',emoji:'⚡'},
+  {id:'vapor',  label:'蒸汽波', emoji:'🌃'},
+  {id:'zen',    label:'禅意',   emoji:'🍵'},
+];
+const THEME_CLASSES=THEMES.map(t=>'theme-'+t.id).filter(c=>c!=='theme-color');
+let _currentTheme='color';
+
+function applyTheme(id){
+  document.body.classList.remove(...THEME_CLASSES);
+  if(id!=='color')document.body.classList.add('theme-'+id);
+  _currentTheme=id;
+  ls.set(K.theme,id);
+  const t=THEMES.find(x=>x.id===id)||THEMES[0];
+  document.getElementById('themeBtn').textContent=t.emoji;
+  setTimeout(()=>{buildGrid();render();},0);
+}
 function loadTheme(){
-  const t=ls.get(K.theme);
-  if(t==='mono'){document.body.classList.add('theme-mono');document.getElementById('themeBtn').textContent='🌈';}
+  const t=ls.get(K.theme)||'color';
+  _currentTheme=t;
+  // quietly apply without triggering rebuild (init does that)
+  document.body.classList.remove(...THEME_CLASSES);
+  if(t!=='color')document.body.classList.add('theme-'+t);
+  const th=THEMES.find(x=>x.id===t)||THEMES[0];
+  document.getElementById('themeBtn').textContent=th.emoji;
 }
 function toggleTheme(){
-  const m=document.body.classList.toggle('theme-mono');
-  document.getElementById('themeBtn').textContent=m?'🌈':'🎨';
-  ls.set(K.theme,m?'mono':'color');vibrate(20);
+  const idx=THEMES.findIndex(t=>t.id===_currentTheme);
+  const next=THEMES[(idx+1)%THEMES.length];
+  applyTheme(next.id);
+  showToast(next.emoji+' '+next.label);
+  vibrate(20);
 }
+
 
 // ── Mandatory ─────────────────────────────────────────────────────────────────
 function isMandatoryBlocking(){
@@ -1784,49 +2094,128 @@ function clearSchedSheet(){
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
 function openDetail(pos){
+  timerStop(); // clear any running timer from previous open
   detailPos=pos;const taskName=getTaskName(pos);const d=getDetail(taskName);
   document.getElementById('detailSheetTitle').textContent='✏️ '+taskName;
   document.getElementById('detailNameInput').value=taskName;
   document.getElementById('detailDoneToggle').checked=state[pos];
   const idx=order[pos];
   document.getElementById('detailMandatoryToggle').checked=mandatory.has(idx);
+  // Load TODAY's notes/todos (not shared across days)
   document.getElementById('detailNotes').value=d.notes||'';
   renderTodoList(d.todos||[]);
+  // Past daily history section
+  const pastEntries=getPastDailyEntries(taskName);
+  const histSection=document.getElementById('dailyHistSection');
+  const histList=document.getElementById('dailyHistList');
+  histSection.style.display=pastEntries.length?'block':'none';
+  histList.innerHTML='';histList.classList.remove('open');
+  document.getElementById('dailyHistToggleBtn').textContent='▶ 查看往期备注 ('+pastEntries.length+')';
+  const W=['日','一','二','三','四','五','六'],M=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  pastEntries.forEach(e=>{
+    const dt=new Date(e.dateStr+'T12:00:00');
+    const label=`${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} 周${W[dt.getDay()]}`;
+    const div=document.createElement('div');div.className='daily-hist-entry';
+    let html=`<div class="daily-hist-date">${label}</div>`;
+    if(e.notes)html+=`<div class="daily-hist-notes">${escHtml(e.notes)}</div>`;
+    if(e.todos&&e.todos.length){e.todos.forEach(t=>{html+=`<div class="daily-hist-todo${t.done?' d':''}">${t.done?'☑':'☐'} ${escHtml(t.text)}</div>`;});}
+    div.innerHTML=html;
+    histList.appendChild(div);
+  });
+  // Inherit button: show if there are past todos
+  const tmpl=getDetailTemplate(taskName);
+  const hasPastTodos=pastEntries.some(e=>e.todos&&e.todos.length)||tmpl.todos.length>0;
+  document.getElementById('inheritTodoBtn').style.display=hasPastTodos?'inline-flex':'none';
   // Populate completion time row
   const existingTS=(timestamps[activeDate()]||[]).find(e=>e.name===taskName);
   const timeInput=document.getElementById('detailTimeInput');
   timeInput.value=existingTS?existingTS.time:'';
   if(!timeInput.value){const n=new Date();timeInput.value=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;}
   document.getElementById('detailTimeRow').style.display=state[pos]?'flex':'none';
-  // Populate start time row
-  const startInput=document.getElementById('detailStartInput');
-  const startBtn=document.getElementById('detailStartBtn');
-  const startSub=document.getElementById('detailStartSub');
-  if(existingTS&&existingTS.startTime){
-    startInput.value=existingTS.startTime;
-    startInput.style.display='';
-    startBtn.textContent='修改';
-    startSub.textContent='已记录开始时间';
-  } else {
-    startInput.value='';startInput.style.display='none';
-    startBtn.textContent='开始';startSub.textContent='记录本次任务的开始时间';
-  }
+  // Populate start time
+  const startTimeInput=document.getElementById('detailStartTimeInput');
+  startTimeInput.value=existingTS?.startTime||'';
+  const hasStart=!!(existingTS&&existingTS.startTime);
+  document.getElementById('detailStartTimeRow').style.display=hasStart?'flex':'none';
+  document.getElementById('timerWidget').classList.remove('show');
   document.getElementById('detailOverlay').classList.add('open');document.getElementById('detailSheet').classList.add('open');
 }
 function toggleDetailTimeRow(){
   const done=document.getElementById('detailDoneToggle').checked;
   document.getElementById('detailTimeRow').style.display=done?'flex':'none';
 }
-function startTaskTimer(){
-  const n=new Date();
-  const t=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-  const startInput=document.getElementById('detailStartInput');
-  const startBtn=document.getElementById('detailStartBtn');
-  const startSub=document.getElementById('detailStartSub');
-  startInput.value=t;startInput.style.display='';
-  startBtn.textContent='修改';startSub.textContent='已记录开始时间';
+// ── Timer ────────────────────────────────────────────────────────────────────
+let _timerInterval=null,_timerElapsed=0,_timerRunning=false,_timerStartWallMs=0;
+function nowHHMM(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
+function setNow(inputId){document.getElementById(inputId).value=nowHHMM();}
+function timerStart(){
+  document.getElementById('detailStartTimeInput').value=nowHHMM();
+  document.getElementById('detailStartTimeRow').style.display='flex';
+  document.getElementById('timerWidget').classList.add('show');
+  document.getElementById('detailStartRow').style.display='none';
+  _timerElapsed=0;_timerRunning=true;_timerStartWallMs=Date.now();
+  _timerTick();
+  _timerInterval=setInterval(_timerTick,500);
 }
-function closeDetail(){document.getElementById('detailOverlay').classList.remove('open');document.getElementById('detailSheet').classList.remove('open');detailPos=-1;}
+function _timerTick(){
+  if(!_timerRunning)return;
+  const total=_timerElapsed+Math.floor((Date.now()-_timerStartWallMs)/1000);
+  const m=Math.floor(total/60),s=total%60;
+  document.getElementById('timerDisplay').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function timerPause(){
+  if(_timerRunning){
+    _timerElapsed+=Math.floor((Date.now()-_timerStartWallMs)/1000);
+    _timerRunning=false;
+    document.getElementById('timerPauseBtn').textContent='▶ 继续';
+    document.getElementById('timerDisplay').classList.add('paused');
+  } else {
+    _timerRunning=true;_timerStartWallMs=Date.now();
+    document.getElementById('timerPauseBtn').textContent='⏸ 暂停';
+    document.getElementById('timerDisplay').classList.remove('paused');
+    _timerTick();
+  }
+}
+function timerFinish(){
+  timerStop();
+  document.getElementById('detailTimeInput').value=nowHHMM();
+  document.getElementById('detailDoneToggle').checked=true;
+  document.getElementById('detailTimeRow').style.display='flex';
+  showToast('计时完成 ✓ 已填写完成时间');
+}
+function timerCancel(){
+  timerStop();
+  document.getElementById('detailStartTimeInput').value='';
+  document.getElementById('detailStartTimeRow').style.display='none';
+}
+function timerStop(){
+  if(_timerInterval){clearInterval(_timerInterval);_timerInterval=null;}
+  _timerRunning=false;_timerElapsed=0;
+  const w=document.getElementById('timerWidget');if(w)w.classList.remove('show');
+  const sr=document.getElementById('detailStartRow');if(sr)sr.style.display='flex';
+  const pd=document.getElementById('timerPauseBtn');if(pd)pd.textContent='⏸ 暂停';
+  const td=document.getElementById('timerDisplay');if(td){td.textContent='00:00';td.classList.remove('paused');}
+}
+function toggleDailyHist(){
+  const list=document.getElementById('dailyHistList');
+  const btn=document.getElementById('dailyHistToggleBtn');
+  const open=list.classList.toggle('open');
+  btn.textContent=(open?'▼ ':'▶ ')+'查看往期备注 ('+list.children.length+')';
+}
+function inheritTodos(){
+  const taskName=getTaskName(detailPos);
+  const pastEntries=getPastDailyEntries(taskName);
+  let src=null;
+  for(const e of pastEntries){if(e.todos&&e.todos.length){src=e;break;}}
+  if(!src){const tmpl=getDetailTemplate(taskName);if(tmpl.todos.length)src={todos:tmpl.todos};}
+  if(!src){showToast('没有找到历史子任务');return;}
+  const existing=getCurrentTodos();
+  const existingTexts=new Set(existing.map(t=>t.text));
+  const merged=[...existing,...src.todos.filter(t=>!existingTexts.has(t.text)).map(t=>({text:t.text,done:false}))];
+  renderTodoList(merged);
+  showToast('已继承上次子任务（未勾选）✓');
+}
+function closeDetail(){timerStop();document.getElementById('detailOverlay').classList.remove('open');document.getElementById('detailSheet').classList.remove('open');detailPos=-1;}
 function renderTodoList(todos){
   const list=document.getElementById('todoList');list.innerHTML='';
   todos.forEach((todo,i)=>{const item=document.createElement('div');item.className='todo-item'+(todo.done?' done':'');item.innerHTML=`<div class="todo-check" onclick="toggleTodoItem(${i})"></div><input class="todo-text" value="${escHtml(todo.text)}" placeholder="子任务" maxlength="30" autocomplete="off"/><button class="todo-delete" onclick="deleteTodo(${i})">✕</button>`;list.appendChild(item);});
@@ -1851,31 +2240,46 @@ function saveDetail(){
   state[detailPos]=isDone;
   if(isDone&&!wasDone)recordTS(newName);
   if(!isDone&&wasDone)removeTS(newName);
-  // If done, apply any manual time edit
+  // Save start time (always, not just when done)
+  const startTimeVal=document.getElementById('detailStartTimeInput').value;
+  const startTimeVisible=document.getElementById('detailStartTimeRow').style.display!=='none';
+  {
+    const d2=activeDate();if(!timestamps[d2])timestamps[d2]=[];
+    const idx3=timestamps[d2].findIndex(e=>e.name===newName);
+    if(startTimeVisible&&startTimeVal){
+      if(idx3>=0)timestamps[d2][idx3].startTime=startTimeVal;
+      else timestamps[d2].push({name:newName,time:'',startTime:startTimeVal});
+    } else {
+      if(idx3>=0)delete timestamps[d2][idx3].startTime;
+    }
+    ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
+  }
+  // If done, apply any manual completion time edit
   if(isDone){
     const editedTime=document.getElementById('detailTimeInput').value;
-    const editedStart=document.getElementById('detailStartInput').value;
-    if(editedTime||editedStart){
+    if(editedTime){
       const d=activeDate();if(!timestamps[d])timestamps[d]=[];
       const idx2=timestamps[d].findIndex(e=>e.name===newName);
-      const entry=idx2>=0?timestamps[d][idx2]:(timestamps[d].push({name:newName,time:''}),timestamps[d][timestamps[d].length-1]);
-      if(editedTime)entry.time=editedTime;
-      if(editedStart)entry.startTime=editedStart;else delete entry.startTime;
-      ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
-    }
-  } else {
-    // Clear startTime if task is un-done
-    const d=activeDate();
-    if(timestamps[d]){
-      const idx2=timestamps[d].findIndex(e=>e.name===newName);
-      if(idx2>=0)delete timestamps[d][idx2].startTime;
+      if(idx2>=0)timestamps[d][idx2].time=editedTime;
+      else timestamps[d].push({name:newName,time:editedTime,startTime:startTimeVisible?startTimeVal:undefined});
       ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
     }
   }
   const isMand=document.getElementById('detailMandatoryToggle').checked;
   if(isMand)mandatory.add(idx);else mandatory.delete(idx);
   ls.set(getUserKey('mandatory'),JSON.stringify([...mandatory]));
-  details[newName]={notes:document.getElementById('detailNotes').value,todos:getCurrentTodos()};
+  // Save today's notes + todos (per-day storage)
+  const todayNotes=document.getElementById('detailNotes').value;
+  const todayTodos=getCurrentTodos();
+  saveDetailDay(newName,activeDate(),todayNotes,todayTodos);
+  // Also update template todos (the canonical list for inheritance) as the union
+  if(!details[newName]||typeof details[newName].notes==='string'){
+    details[newName]={byDate:{},template:{todos:[]}};
+  }
+  // Template = all unique todo texts ever added (for inherit button)
+  const allTodoTexts=new Set((details[newName].template?.todos||[]).map(t=>t.text));
+  todayTodos.forEach(t=>{if(!allTodoTexts.has(t.text))allTodoTexts.add(t.text);});
+  details[newName].template={todos:[...allTodoTexts].map(t=>({text:t,done:false}))};
   ls.set(getUserKey('details'),JSON.stringify(details));save();
   if(isDone&&!wasDone){vibrate([30,60]);const c=document.querySelector(`.cell[data-i="${detailPos}"]`);if(c){burstParticles(c);playComplete();}showCheer();}
   closeDetail();render();buildGrid();checkAchievements();showToast('已保存 ✓');
@@ -1973,7 +2377,23 @@ function openHistory(){
     const done=e.done??(e.state?e.state.filter(Boolean).length:0),lines=e.lines??0,pct=e.pct??Math.min(done*20,100);
     const ts=timestamps[e.dateStr]||[];
     const item=document.createElement('div');item.className='history-item';
-    item.innerHTML=`<div class="history-item-header"><div class="history-date-block" data-date="${e.dateStr}"><div class="history-month">${isToday?'今天':M[dt.getMonth()]}</div><div class="history-day">${dt.getDate()}</div><div class="history-weekday">${W[dt.getDay()]}</div></div><div class="history-info"><div class="history-pct">${pct}% 完成</div><div class="history-sub">勾选了 ${done} 项${lines>0?` · ${lines} 条连线`:''}</div><div class="history-bar-bg"><div class="history-bar-fill" style="width:${Math.min(pct,100)}%"></div></div></div><div class="history-bingo ${lines>0?'show':''}">BINGO</div></div>${ts.length?`<div class="history-expand" onclick="this.nextElementSibling.classList.toggle('open')">▶ 查看时间记录 (${ts.length})</div><div class="history-timestamps">${ts.map(t=>`<div class="history-ts-item"><span class="history-ts-time">${t.startTime?'<span style="opacity:.55;font-size:.7em;margin-right:2px">▶ '+t.startTime+' → ':''}${t.time}</span><span style="flex:1">${escHtml(t.name)}</span>${t.startTime&&t.time?'<span style="font-size:.68rem;color:var(--text-lt);font-weight:700;white-space:nowrap">'+( calcDuration(t.startTime,t.time)||'')+'</span>':''}</div>`).join('')}</div>`:''}`;
+    item.innerHTML=`<div class="history-item-header"><div class="history-date-block" data-date="${e.dateStr}"><div class="history-month">${isToday?'今天':M[dt.getMonth()]}</div><div class="history-day">${dt.getDate()}</div><div class="history-weekday">${W[dt.getDay()]}</div></div><div class="history-info"><div class="history-pct">${pct}% 完成</div><div class="history-sub">勾选了 ${done} 项${lines>0?` · ${lines} 条连线`:''}</div><div class="history-bar-bg"><div class="history-bar-fill" style="width:${Math.min(pct,100)}%"></div></div></div><div class="history-bingo ${lines>0?'show':''}">BINGO</div></div>${ts.length?`<div class="history-expand" onclick="this.nextElementSibling.classList.toggle('open')">▶ 查看完成时间 (${ts.length})</div><div class="history-timestamps">${ts.map(t=>{
+      let timeStr=t.time||'';
+      let extra='';
+      if(t.startTime&&t.time){
+        // Calculate duration
+        const [sh,sm]=t.startTime.split(':').map(Number);
+        const [eh,em]=t.time.split(':').map(Number);
+        let mins=(eh*60+em)-(sh*60+sm);
+        if(mins<0)mins+=1440;
+        const durStr=mins>=60?Math.floor(mins/60)+'h'+(mins%60?String(mins%60).padStart(2,'0')+'m':''):mins+'m';
+        timeStr=t.startTime+' → '+t.time;
+        extra='<span class="history-ts-dur">'+durStr+'</span>';
+      } else if(t.startTime){
+        timeStr='开始 '+t.startTime;
+      }
+      return '<div class="history-ts-item"><span class="history-ts-time">'+timeStr+'</span><span>'+escHtml(t.name)+'</span>'+extra+'</div>';
+    }).join('')}</div>`:''}`;
     // Long-press OR double-click on date block to jump to bingo
     const dateBlock=item.querySelector('.history-date-block');
     let lpTimer=null,tapCount=0,tapResetTimer=null;
@@ -2063,7 +2483,21 @@ function showCalPreview(ds,data){
   else{html+=`<div class="cal-detail-pct" style="color:var(--text-lt)">当天没有记录</div>`;}
   if(ts.length){
     html+=`<div class="cal-edit-label" style="margin-top:8px">完成时间</div>`;
-    ts.sort((a,b)=>a.time.localeCompare(b.time)).forEach(t=>{const dur=calcDuration(t.startTime,t.time);html+=`<div class="cal-ts-row"><span class="cal-ts-time">${t.startTime?'<span style="opacity:.55;font-size:.75em">▶ '+t.startTime+' → </span>':''}${t.time}</span><span style="flex:1">${escHtml(t.name)}</span>${dur?'<span style="font-size:.7rem;color:var(--text-lt);font-weight:700">'+dur+'</span>':''}</div>`;});
+    ts.sort((a,b)=>(a.startTime||a.time||'').localeCompare(b.startTime||b.time||'')).forEach(t=>{
+      let timeStr=t.time||'';
+      let durBadge='';
+      if(t.startTime&&t.time){
+        const [sh,sm]=t.startTime.split(':').map(Number);
+        const [eh,em]=t.time.split(':').map(Number);
+        let mins=(eh*60+em)-(sh*60+sm);if(mins<0)mins+=1440;
+        const ds=mins>=60?Math.floor(mins/60)+'h'+(mins%60?String(mins%60).padStart(2,'0')+'m':''):mins+'m';
+        timeStr=t.startTime+' → '+t.time;
+        durBadge='<span style="font-size:.62rem;font-weight:800;color:var(--green-dk);background:var(--green-lt);border-radius:5px;padding:1px 5px;margin-left:4px;">'+ds+'</span>';
+      } else if(t.startTime){
+        timeStr='开始 '+t.startTime;
+      }
+      html+=`<div class="cal-ts-row"><span class="cal-ts-time" style="white-space:nowrap">${timeStr}</span><span>${escHtml(t.name)}</span>${durBadge}</div>`;
+    });
   }
   html+=`<button class="cal-save-btn" onclick="calGoToDay('${ds}')">${isToday?'返回今天 ↩':'跳转到这天编辑 →'}</button>`;
   html+=`</div>`;
@@ -2477,7 +2911,7 @@ function showBubbleMenu(gi,ti){
     <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:16px 16px calc(16px + env(safe-area-inset-bottom));">
       <div style="font-size:.85rem;font-weight:900;color:var(--text-mid);text-align:center;padding:4px 0 14px;border-bottom:1px solid var(--bg);margin-bottom:8px;">${escHtml(name)}${hasSchedule?' 📅':''}</div>
       <button id="bmRename" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--purple-lt);color:var(--purple);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">✏️ 修改名称</button>
-      <button id="bmSched" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--amber-lt);color:var(--amber-dk);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">📅 计划任务时间</button>
+      <button id="bmSched" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--amber-lt);color:var(--amber-dk);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">📅 设置出现时间</button>
       <button id="bmDel" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--coral-lt);color:#c05040;font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">🗑️ 删除任务</button>
       <button id="bmCancel" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--bg);color:var(--text-mid);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;text-align:center;">取消</button>
     </div>`;
@@ -2796,11 +3230,49 @@ function importData(){
   try{
     const data=JSON.parse(decodeURIComponent(escape(atob(raw))));
     let count=0;
-    for(const [k,v] of Object.entries(data)){
-      if(k.startsWith(KP)){ls.set(k,v);count++;}
+
+    // ── 检测导出数据里的用户名前缀 ──────────────────────────────────────────
+    let srcUserPrefix = null;
+    const kpEsc = KP.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    for (const k of Object.keys(data)) {
+      const m = k.match(new RegExp('^' + kpEsc + 'u_(.+?)_(?:groups|details|mandatory|timestamps|achievements)$'));
+      if (m) { srcUserPrefix = KP + 'u_' + m[1] + '_'; break; }
     }
+
+    // 当前环境的用户前缀
+    const dstUserPrefix = currentUser ? KP + 'u_' + currentUser.username + '_' : null;
+
+    // 用户相关的字段名（需要做前缀映射的）
+    const USER_FIELDS = /^(groups|details|mandatory|timestamps|achievements|\d{4}-\d{2}-\d{2})$/;
+
+    for (const [k, v] of Object.entries(data)) {
+      if (!k.startsWith(KP)) continue;
+      let targetKey = k;
+
+      if (srcUserPrefix && k.startsWith(srcUserPrefix)) {
+        const field = k.slice(srcUserPrefix.length);
+        if (dstUserPrefix) {
+          // 场景②③：来源有用户前缀，目标已登录 → 映射到当前用户（不论用户名是否相同）
+          targetKey = dstUserPrefix + field;
+        } else {
+          // 场景④：来源有用户前缀，目标未登录 → 剥掉前缀写入全局 key
+          targetKey = KP + field;
+        }
+      } else if (!srcUserPrefix && dstUserPrefix) {
+        // 场景⑤：来源无用户前缀，目标已登录 → 用户数据字段加上目标用户前缀
+        const field = k.slice(KP.length);
+        if (USER_FIELDS.test(field)) {
+          targetKey = dstUserPrefix + field;
+        }
+      }
+      // 场景①：来源无用户前缀，目标未登录 → 原样写入，无需处理
+
+      ls.set(targetKey, v);
+      count++;
+    }
+
     closeExportModal();
-    loadAll();load();buildGrid();render();
+    loadAll(); load(); buildGrid(); render();
     showToast(`已导入 ${count} 条数据 ✓`);
   }catch(e){showToast('导出码无效，请重新复制');}
 }
@@ -2840,5 +3312,6 @@ if(!ls.get(K.user)){
 }
 
 </script>
+
 </body>
 </html>
