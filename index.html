@@ -420,16 +420,31 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .detail-save-btn{width:100%;padding:14px;border-radius:14px;border:none;background:var(--purple);color:#fff;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;margin-top:18px;}
 .detail-save-btn:active{transform:scale(.97);}
 /* Timer widget */
-.timer-widget{background:linear-gradient(135deg,var(--amber-lt),#fff9f0);border:2px solid var(--amber);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:none;}
+.timer-widget{background:var(--surface);border:2px solid var(--amber);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:none;}
 .timer-widget.show{display:block;}
-.timer-display{font-size:2.4rem;font-weight:900;font-family:"Nunito",monospace;color:var(--amber-dk);text-align:center;letter-spacing:.04em;margin-bottom:12px;line-height:1;}
+.timer-display{font-size:2.6rem;font-weight:900;font-family:system-ui,-apple-system,sans-serif;color:var(--amber-dk);text-align:center;letter-spacing:.06em;margin-bottom:12px;line-height:1;}
 .timer-display.paused{color:var(--text-lt);}
+.timer-sub{font-size:.65rem;font-weight:700;color:var(--text-lt);text-align:center;margin-top:-8px;margin-bottom:10px;min-height:1em;letter-spacing:.02em;}
 .timer-btns{display:flex;gap:8px;}
 .timer-btn{flex:1;padding:10px 6px;border-radius:12px;border:none;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.78rem;font-weight:900;cursor:pointer;transition:all .18s;}
 .timer-btn:active{transform:scale(.96);}
 .timer-btn-pause{background:var(--bg);color:var(--text-mid);}
 .timer-btn-done{background:var(--green);color:#fff;}
 .timer-btn-cancel{background:var(--coral-lt);color:#c05040;}
+/* 各主题计时器字体 */
+body:not([class*="theme-"]) .timer-display,
+body.theme-color .timer-display{font-family:"DengXian","等线",system-ui,-apple-system,sans-serif!important;font-weight:300!important;letter-spacing:.06em;}
+body.theme-matcha .timer-display{font-family:"DengXian","等线",system-ui,-apple-system,sans-serif!important;font-weight:300!important;letter-spacing:.06em;color:var(--done-dk);}
+body.theme-cyber .timer-display{font-family:"Orbitron",monospace!important;font-size:2.2rem!important;letter-spacing:.12em;color:#f5e642;text-shadow:0 0 10px rgba(245,230,66,.6);}
+body.theme-vapor .timer-display{font-family:"Abril Fatface",cursive!important;font-size:2.6rem!important;letter-spacing:.04em;}
+body.theme-ocean .timer-display{font-family:"Orbitron",monospace!important;font-size:2.1rem!important;letter-spacing:.1em;}
+body.theme-zen .timer-display{font-family:system-ui,-apple-system,sans-serif!important;font-weight:300!important;font-size:2.8rem!important;letter-spacing:.08em;color:var(--done-dk);}
+body.theme-mono .timer-display{font-family:"Courier New",Courier,monospace!important;letter-spacing:.05em;}
+/* 赛博朋克计时器容器 */
+body.theme-cyber .timer-widget{background:#141414;border-color:#f5e642;}
+body.theme-ocean .timer-widget{background:var(--surface);border-color:#4dd0e1;}
+body.theme-vapor .timer-widget{background:var(--surface);border-color:#ff71ce;}
+body.theme-night .timer-widget{background:var(--surface);}
 /* now-btn beside time inputs */
 .time-row-inner{display:flex;align-items:center;gap:6px;}
 .now-btn{padding:5px 9px;border-radius:8px;border:1.5px solid var(--text-lt);background:var(--surface);font-size:.68rem;font-weight:800;color:var(--text-mid);cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0;}
@@ -755,6 +770,7 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
     <!-- Timer widget (shows when running) -->
     <div class="timer-widget" id="timerWidget">
       <div class="timer-display" id="timerDisplay">00:00</div>
+      <div class="timer-sub" id="timerSub">专注中…</div>
       <div class="timer-btns">
         <button class="timer-btn timer-btn-cancel" onclick="timerCancel()">✕ 取消</button>
         <button class="timer-btn timer-btn-pause" id="timerPauseBtn" onclick="timerPause()">⏸ 暂停</button>
@@ -2145,56 +2161,88 @@ function toggleDetailTimeRow(){
   document.getElementById('detailTimeRow').style.display=done?'flex':'none';
 }
 // ── Timer ────────────────────────────────────────────────────────────────────
-let _timerInterval=null,_timerElapsed=0,_timerRunning=false,_timerStartWallMs=0;
+// _timerFocusSecs = 专注累计秒数（不含暂停）
+// _timerPauseSecs = 暂停累计秒数
+let _timerInterval=null,_timerFocusSecs=0,_timerPauseSecs=0,_timerRunning=false,_timerSegStart=Date.now();
+let _timerLastFocusSecs=0; // 供 saveDetail 读取
+
 function nowHHMM(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function setNow(inputId){document.getElementById(inputId).value=nowHHMM();}
+
+function _fmtSecs(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function _fmtMins(s){
+  const m=Math.round(s/60);
+  if(m<60)return m+'m';
+  return Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0')+'m':'');
+}
+
 function timerStart(){
   document.getElementById('detailStartTimeInput').value=nowHHMM();
   document.getElementById('detailStartTimeRow').style.display='flex';
   document.getElementById('timerWidget').classList.add('show');
   document.getElementById('detailStartRow').style.display='none';
-  _timerElapsed=0;_timerRunning=true;_timerStartWallMs=Date.now();
+  _timerFocusSecs=0;_timerPauseSecs=0;_timerLastFocusSecs=0;
+  _timerRunning=true;_timerSegStart=Date.now();
   _timerTick();
   _timerInterval=setInterval(_timerTick,500);
 }
 function _timerTick(){
-  if(!_timerRunning)return;
-  const total=_timerElapsed+Math.floor((Date.now()-_timerStartWallMs)/1000);
-  const m=Math.floor(total/60),s=total%60;
-  document.getElementById('timerDisplay').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  const now=Date.now();
+  const segSecs=Math.floor((now-_timerSegStart)/1000);
+  let focusNow=_timerFocusSecs,pauseNow=_timerPauseSecs;
+  if(_timerRunning)focusNow+=segSecs; else pauseNow+=segSecs;
+  const disp=document.getElementById('timerDisplay');
+  const sub=document.getElementById('timerSub');
+  if(disp)disp.textContent=_fmtSecs(focusNow);
+  if(sub){
+    if(_timerRunning){
+      sub.textContent=pauseNow>0?'专注中 · 已暂停 '+_fmtMins(pauseNow):'专注中…';
+    } else {
+      sub.textContent='已暂停 · 专注 '+_fmtMins(focusNow);
+    }
+  }
 }
 function timerPause(){
+  const segSecs=Math.floor((Date.now()-_timerSegStart)/1000);
   if(_timerRunning){
-    _timerElapsed+=Math.floor((Date.now()-_timerStartWallMs)/1000);
-    _timerRunning=false;
+    _timerFocusSecs+=segSecs;
+    _timerRunning=false;_timerSegStart=Date.now();
     document.getElementById('timerPauseBtn').textContent='▶ 继续';
     document.getElementById('timerDisplay').classList.add('paused');
   } else {
-    _timerRunning=true;_timerStartWallMs=Date.now();
+    _timerPauseSecs+=segSecs;
+    _timerRunning=true;_timerSegStart=Date.now();
     document.getElementById('timerPauseBtn').textContent='⏸ 暂停';
     document.getElementById('timerDisplay').classList.remove('paused');
-    _timerTick();
   }
+  _timerTick();
 }
 function timerFinish(){
-  timerStop();
+  // Finalize counts before stopping
+  const segSecs=Math.floor((Date.now()-_timerSegStart)/1000);
+  if(_timerRunning)_timerFocusSecs+=segSecs; else _timerPauseSecs+=segSecs;
+  _timerLastFocusSecs=_timerFocusSecs;
+  _timerStop_internal();
   document.getElementById('detailTimeInput').value=nowHHMM();
   document.getElementById('detailDoneToggle').checked=true;
   document.getElementById('detailTimeRow').style.display='flex';
   showToast('计时完成 ✓ 已填写完成时间');
 }
 function timerCancel(){
-  timerStop();
+  _timerLastFocusSecs=0;
+  _timerStop_internal();
   document.getElementById('detailStartTimeInput').value='';
   document.getElementById('detailStartTimeRow').style.display='none';
 }
-function timerStop(){
+function timerStop(){_timerLastFocusSecs=0;_timerStop_internal();}
+function _timerStop_internal(){
   if(_timerInterval){clearInterval(_timerInterval);_timerInterval=null;}
-  _timerRunning=false;_timerElapsed=0;
+  _timerFocusSecs=0;_timerPauseSecs=0;_timerRunning=false;
   const w=document.getElementById('timerWidget');if(w)w.classList.remove('show');
   const sr=document.getElementById('detailStartRow');if(sr)sr.style.display='flex';
   const pd=document.getElementById('timerPauseBtn');if(pd)pd.textContent='⏸ 暂停';
   const td=document.getElementById('timerDisplay');if(td){td.textContent='00:00';td.classList.remove('paused');}
+  const ts=document.getElementById('timerSub');if(ts)ts.textContent='专注中…';
 }
 function toggleDailyHist(){
   const list=document.getElementById('dailyHistList');
@@ -2249,8 +2297,13 @@ function saveDetail(){
     if(startTimeVisible&&startTimeVal){
       if(idx3>=0)timestamps[d2][idx3].startTime=startTimeVal;
       else timestamps[d2].push({name:newName,time:'',startTime:startTimeVal});
+      // Store focus/pause secs if timer was used this session
+      if(_timerLastFocusSecs>0){
+        const idx4=timestamps[d2].findIndex(e=>e.name===newName);
+        if(idx4>=0)timestamps[d2][idx4].focusSecs=_timerLastFocusSecs;
+      }
     } else {
-      if(idx3>=0)delete timestamps[d2][idx3].startTime;
+      if(idx3>=0){delete timestamps[d2][idx3].startTime;delete timestamps[d2][idx3].focusSecs;}
     }
     ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
   }
@@ -2381,14 +2434,22 @@ function openHistory(){
       let timeStr=t.time||'';
       let extra='';
       if(t.startTime&&t.time){
-        // Calculate duration
         const [sh,sm]=t.startTime.split(':').map(Number);
         const [eh,em]=t.time.split(':').map(Number);
-        let mins=(eh*60+em)-(sh*60+sm);
-        if(mins<0)mins+=1440;
-        const durStr=mins>=60?Math.floor(mins/60)+'h'+(mins%60?String(mins%60).padStart(2,'0')+'m':''):mins+'m';
+        let totalMins=(eh*60+em)-(sh*60+sm);
+        if(totalMins<0)totalMins+=1440;
+        const fmt=m=>m>=60?Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0')+'m':''):m+'m';
         timeStr=t.startTime+' → '+t.time;
-        extra='<span class="history-ts-dur">'+durStr+'</span>';
+        if(t.focusSecs!=null){
+          const focusMins=Math.round(t.focusSecs/60);
+          const pauseMins=totalMins-focusMins;
+          let parts='专注 '+fmt(focusMins);
+          if(pauseMins>0)parts+=' · 暂停 '+fmt(pauseMins);
+          parts+=' · 共 '+fmt(totalMins);
+          extra='<span class="history-ts-dur">'+parts+'</span>';
+        } else {
+          extra='<span class="history-ts-dur">'+fmt(totalMins)+'</span>';
+        }
       } else if(t.startTime){
         timeStr='开始 '+t.startTime;
       }
