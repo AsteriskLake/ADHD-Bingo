@@ -693,7 +693,7 @@ body.theme-night .timer-widget{background:var(--surface);}
 <div class="login-overlay" id="loginOverlay" style="display:none;">
   <div class="login-modal">
     <div class="login-title">👾 ADHD Bingo</div>
-    <div class="login-sub">账号仅存本地，用于多用户隔离数据<br>换设备或浏览器需重新注册</div>
+    <div class="login-sub">账号仅存本地，用于多用户隔离数据<br>换设备或浏览器需重新注册<br><span style="color:#c05040;font-weight:800;">⚠️ 请勿清除浏览器缓存，否则数据会丢失<br>建议先用 📦 备份迁移码再进行此操作</span></div>
     <div class="login-tabs">
       <button class="login-tab active" id="tabLogin" onclick="switchLoginTab('login')">登录</button>
       <button class="login-tab" id="tabReg" onclick="switchLoginTab('reg')">注册</button>
@@ -3428,7 +3428,8 @@ function importData(){
   const raw=ta.value.trim();
   if(!raw){showToast('请先粘贴导出码');return;}
   try{
-    const data=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    const cleaned=raw.replace(/[\s\n\r]/g,'');
+    const data=JSON.parse(decodeURIComponent(escape(atob(cleaned))));
     let count=0;
 
     // ── 检测导出数据里的用户名前缀 ──────────────────────────────────────────
@@ -3484,11 +3485,17 @@ function isPWA(){
 function checkPWAFirstRun(){
   if(!isPWA())return;
   const key=KP+'pwa_welcomed';
-  if(ls.get(key))return;
+  if(ls.get(key)){
+    // 每次从主屏幕启动都提示备份，避免用户误清后台/缓存丢数据
+    setTimeout(()=>showToast('💾 数据存本地，定期用 📦 备份迁移码哦'),2000);
+    return;
+  }
   ls.set(key,'1');
   // Show banner after a short delay
   const banner=document.getElementById('pwaBanner');
   if(banner){banner.style.display='block';setTimeout(()=>{banner.style.display='none';},8000);}
+  // First-run extra tip
+  setTimeout(()=>showToast('💡 首次使用！建议先去 📦 备份一下迁移码'),3000);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
