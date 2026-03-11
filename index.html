@@ -1142,20 +1142,6 @@ function save(){
     const activeSnapshot=[];
     for(const g of groups) for(const t of g.tasks) if(t.active) activeSnapshot.push(t.name);
     ls.set(activeKey(),JSON.stringify({state,order,done,lines,pct,gridSize,activeSnapshot}));
-    // Keep timestamps in sync: remove entries for unchecked tasks ONLY if they have no timing data
-    const d=activeDate();
-    if(timestamps[d]){
-      const checkedNames=new Set();
-      for(let pos=0;pos<totalCells();pos++){if(state[pos])checkedNames.add(getTaskName(pos));}
-      timestamps[d]=timestamps[d].filter(e=>{
-        if(checkedNames.has(e.name))return true; // keep checked tasks
-        // Keep unchecked tasks only if they have timing data (segments or startTime)
-        if(e.segments&&e.segments.length>0)return true;
-        if(e.startTime)return true;
-        return false;
-      });
-      ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
-    }
   }catch(e){}
 }
 
