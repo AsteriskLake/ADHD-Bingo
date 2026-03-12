@@ -1180,17 +1180,22 @@ function loadAll(){
   try{const s=ls.get(mKey)||ls.get(K.mand);if(s)mandatory=new Set(JSON.parse(s));}catch(e){}
   try{const s=ls.get(K.name);if(s){appName='Life Bingo';document.getElementById('titleDisplay').textContent='Life Bingo';document.title='Life Bingo';ls.set(K.name,'Life Bingo');}}catch(e){}
   try{const s=ls.get(tKey)||ls.get(K.ts);if(s)timestamps=JSON.parse(s);}catch(e){}
-  // One-time cleanup: deduplicate timestamps per day (keep last entry per task name, remove empty-time orphans)
+  // Cleanup: deduplicate timestamps for PAST days only (never touch today)
+  // Keep entry with latest completion time per task name; remove empty-time orphans
   try{
+    const today=todayStr();
     let tsChanged=false;
     for(const d of Object.keys(timestamps)){
+      if(d===today)continue; // never modify today's data on load
       const arr=timestamps[d];
-      if(!Array.isArray(arr))continue;
-      // Remove orphans (no time, no segments)
+      if(!Array.isArray(arr)||!arr.length)continue;
       const cleaned=arr.filter(t=>(t.time&&t.time!=='')||(t.segments&&t.segments.length>0));
-      // Deduplicate: keep last occurrence of each task name
+      if(!cleaned.length)continue; // don't wipe — if all orphans, leave as-is to avoid data loss
       const seen=new Map();
-      for(const t of cleaned)seen.set(t.name,t);
+      for(const t of cleaned){
+        const ex=seen.get(t.name);
+        if(!ex||(t.time&&(!ex.time||t.time>ex.time)))seen.set(t.name,t);
+      }
       const deduped=[...seen.values()];
       if(deduped.length!==arr.length){timestamps[d]=deduped;tsChanged=true;}
     }
@@ -1223,6 +1228,19 @@ function removeTS(name){
   timestamps[d]=timestamps[d].filter(e=>{
     if(e.name!==name)return true;
     return e.segments&&e.segments.length>0; // keep if has timing data
+  });
+  ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
+}
+// Sync today's non-timed timestamps to match current state
+// Entries WITH segments are always kept; entries without are only kept if their cell is currently checked
+function syncTimestampsToState(){
+  const d=activeDate();
+  if(!timestamps[d])return;
+  const checkedNames=new Set();
+  for(let pos=0;pos<totalCells();pos++){if(state[pos])checkedNames.add(getTaskName(pos));}
+  timestamps[d]=timestamps[d].filter(e=>{
+    if(e.segments&&e.segments.length>0)return true;
+    return checkedNames.has(e.name);
   });
   ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
 }
@@ -1526,7 +1544,6 @@ const getCtx=()=>{if(!actx)try{actx=new(window.AudioContext||window.webkitAudioC
 function tone(f,dur,vol=0.35){try{const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(vol,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);o.start(c.currentTime);o.stop(c.currentTime+dur);}catch(e){}}
 function playComplete(){try{const c=getCtx();if(!c)return;const t=c.currentTime;[[783.99,0,0.45],[1174.66,0.06,0.35],[1567.98,0.13,0.28]].forEach(([f,dt,dur])=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+dt);g.gain.linearRampToValueAtTime(0.24,t+dt+0.022);g.gain.setTargetAtTime(0.001,t+dt+0.04,dur*0.28);o.start(t+dt);o.stop(t+dt+dur+0.05);});}catch(e){}}
 function playUndo(){try{const c=getCtx();if(!c)return;const t=c.currentTime;[[523.25,0,0.5],[783.99,0.07,0.38]].forEach(([f,dt,dur])=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+dt);g.gain.linearRampToValueAtTime(0.18,t+dt+0.022);g.gain.setTargetAtTime(0.001,t+dt+0.04,dur*0.28);o.start(t+dt);o.stop(t+dt+dur+0.05);});}catch(e){}}
-function playUndo(){tone(440,.15,.18);setTimeout(()=>tone(220,.15,.12),60);}
 function playBingo(){[[523,0],[659,.12],[784,.24],[1047,.36],[1318,.5]].forEach(([f,t])=>setTimeout(()=>tone(f,.3,.38),t*1000));}
 
 // ── Haptic ────────────────────────────────────────────────────────────────────
@@ -2948,7 +2965,7 @@ function toggle(pos){
   c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');
   c.addEventListener('animationend',()=>c.classList.remove('pop'),{once:true});
   if(state[pos]){vibrate([30,60]);burstParticles(c);playComplete();showCheer();recordTS(getTaskName(pos));}
-  else{vibrate(20);playUndo();removeTS(getTaskName(pos));}
+  else{vibrate(20);playUndo();removeTS(getTaskName(pos));syncTimestampsToState();}
   render();buildGrid();checkAchievements();
 }
 
@@ -3015,7 +3032,7 @@ function doShuffle(){
   }
   save();buildGrid();render();showToast('已随机排列 🔀');
 }
-function doReset(){state=Array(totalCells()).fill(false);prevLines=0;prevRawLines=0;save();buildGrid();render();showToast('已重置');}
+function doReset(){state=Array(totalCells()).fill(false);prevLines=0;prevRawLines=0;syncTimestampsToState();save();buildGrid();render();showToast('已重置');}
 
 // ── Achievements ──────────────────────────────────────────────────────────────
 function saveAch(){ls.set(getUserKey('achievements'),JSON.stringify({unlocked:[...achUnlocked],custom:achCustom,userDefined:achUserDefined}));}
