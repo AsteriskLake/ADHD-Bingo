@@ -902,11 +902,13 @@ body.theme-night .timer-widget{background:var(--surface);}
   <div class="header-left">
     <div id="titleDisplay" class="title" style="cursor:default;user-select:none;-webkit-user-select:none;">Life Bingo</div>
     <div class="date-line" id="dateDisplay"></div>
-    <div class="viewing-banner" id="viewingBanner"></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="viewing-banner" id="viewingBanner"></div>
+      <button class="btn-icon" id="returnTodayBtn" onclick="returnToToday()" title="返回今天" style="display:none;background:var(--coral-lt);color:var(--coral);font-size:.75rem;padding:4px 10px;height:auto;border-radius:99px;font-weight:800;">↩ 返回今天</button>
+    </div>
   </div>
   <div class="header-right">
     <div id="userBadgeBtn" onclick="openLoginModal()" style="display:none;"></div>
-    <button class="btn-icon" id="returnTodayBtn" onclick="returnToToday()" title="返回今天" style="display:none;background:var(--coral-lt);color:var(--coral);">↩</button>
     <button class="btn-icon" onclick="openCal()" title="日历">📅</button>
     <button class="btn-icon" onclick="openHistory()" title="历史">🕐</button>
     <button class="btn-icon" onclick="toggleTheme()" id="themeBtn" title="主题">🎨</button>
@@ -1176,7 +1178,7 @@ function loadAll(){
   if(_sanitized)ls.set(getUserKey('groups'),JSON.stringify(groups));
   try{const s=ls.get(dKey)||ls.get(K.detail);if(s)details=JSON.parse(s);}catch(e){}
   try{const s=ls.get(mKey)||ls.get(K.mand);if(s)mandatory=new Set(JSON.parse(s));}catch(e){}
-  try{const s=ls.get(K.name);if(s){appName=s;document.getElementById('titleDisplay').textContent=s;document.title=s;}}catch(e){}
+  try{const s=ls.get(K.name);if(s){appName='Life Bingo';document.getElementById('titleDisplay').textContent='Life Bingo';document.title='Life Bingo';ls.set(K.name,'Life Bingo');}}catch(e){}
   try{const s=ls.get(tKey)||ls.get(K.ts);if(s)timestamps=JSON.parse(s);}catch(e){}
   try{const s=ls.get(K.size);if(s){gridSize=parseInt(s)||5;updateSizeBtns();}}catch(e){}
   try{const s=ls.get(getUserKey('achievements'));if(s){const d=JSON.parse(s);achUnlocked=new Set(d.unlocked||[]);achCustom=d.custom||{};achUserDefined=d.userDefined||[];}}catch(e){}
@@ -2592,9 +2594,11 @@ function openHistory(){
     const tsRaw=timestamps[e.dateStr]||[];
     // Only show entries that have a meaningful completion time or timer segments
     const ts=tsRaw.filter(t=>(t.time&&t.time!=='')||(t.segments&&t.segments.length>0));
+    // Count = number of tasks (not number of segments)
+    const tsCount=ts.length;
     if(pct===0&&done===0&&!ts.length)return;
     const item=document.createElement('div');item.className='history-item';
-    item.innerHTML=`<div class="history-item-header"><div class="history-date-block" data-date="${e.dateStr}"><div class="history-month">${isToday?'今天':M[dt.getMonth()]}</div><div class="history-day">${dt.getDate()}</div><div class="history-weekday">${W[dt.getDay()]}</div></div><div class="history-info"><div class="history-pct">${pct}% 完成</div><div class="history-sub">勾选了 ${done} 项${lines>0?` · ${lines} 条连线`:''}</div><div class="history-bar-bg"><div class="history-bar-fill" style="width:${Math.min(pct,100)}%"></div></div></div><div class="history-bingo ${lines>0?'show':''}">BINGO</div></div>${ts.length?`<div class="history-expand" onclick="this.nextElementSibling.classList.toggle('open')">▶ 查看完成时间 (${ts.length})</div><div class="history-timestamps">${ts.map(t=>{
+    item.innerHTML=`<div class="history-item-header"><div class="history-date-block" data-date="${e.dateStr}"><div class="history-month">${isToday?'今天':M[dt.getMonth()]}</div><div class="history-day">${dt.getDate()}</div><div class="history-weekday">${W[dt.getDay()]}</div></div><div class="history-info"><div class="history-pct">${pct}% 完成</div><div class="history-sub">勾选了 ${done} 项${lines>0?` · ${lines} 条连线`:''}</div><div class="history-bar-bg"><div class="history-bar-fill" style="width:${Math.min(pct,100)}%"></div></div></div><div class="history-bingo ${lines>0?'show':''}">BINGO</div></div>${ts.length?`<div class="history-expand" onclick="this.nextElementSibling.classList.toggle('open')">▶ 查看完成时间 (${tsCount})</div><div class="history-timestamps">${ts.map(t=>{
       const fmt=m=>m>=60?Math.floor(m/60)+'h'+(m%60?String(m%60).padStart(2,'0')+'m':''):m+'m';
       // Multi-segment support
       if(t.segments&&t.segments.length){
