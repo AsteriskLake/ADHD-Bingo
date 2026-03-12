@@ -1058,9 +1058,41 @@ let groups=[{name:'默认分组', tasks: DEFAULT_TASKS.slice(0,25).map(n=>({name
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const activeDate=()=>viewingDate||todayStr();
+// ── Cookie helpers (backup for localStorage) ──────────────────────────────────
+const ck={
+  set(k,v,days=365){
+    const exp=new Date(Date.now()+days*864e5).toUTCString();
+    document.cookie=`${encodeURIComponent(k)}=${encodeURIComponent(v)};expires=${exp};path=/;SameSite=Lax`;
+  },
+  get(k){
+    const name=encodeURIComponent(k)+'=';
+    for(const part of document.cookie.split(';')){
+      const c=part.trim();
+      if(c.startsWith(name))return decodeURIComponent(c.slice(name.length));
+    }
+    return null;
+  },
+  del(k){document.cookie=`${encodeURIComponent(k)}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;}
+};
+// Keys that should be backed up to cookies (login-critical only)
+const COOKIE_KEYS=new Set([KP+'user']);
 const ls={
-  get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},
-  set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}},
+  get(k){
+    try{
+      const v=localStorage.getItem(k);
+      if(v!==null)return v;
+      // Fallback to cookie if localStorage missing
+      if(COOKIE_KEYS.has(k)){const cv=ck.get(k);if(cv!==null){try{localStorage.setItem(k,cv);}catch(e){}return cv;}}
+      return null;
+    }catch(e){
+      if(COOKIE_KEYS.has(k))return ck.get(k);
+      return null;
+    }
+  },
+  set(k,v){
+    try{localStorage.setItem(k,v);}catch(e){}
+    if(COOKIE_KEYS.has(k)){if(v)ck.set(k,v);else ck.del(k);}
+  },
 };
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 
@@ -1160,6 +1192,14 @@ function loadAll(){
   runMigration();
   // Load user
   try{const s=ls.get(K.user);if(s){currentUser=JSON.parse(s);updateUserBadge();}}catch(e){}
+  // If logged in, ensure account data is in localStorage (restore from cookie if needed)
+  if(currentUser){
+    const accountKey=KP+'account_'+currentUser.username;
+    if(!localStorage.getItem(accountKey)){
+      const fromCookie=ck.get(accountKey);
+      if(fromCookie)try{localStorage.setItem(accountKey,fromCookie);}catch(e){}
+    }
+  }
   // Use user-specific keys if available
   const gKey=currentUser?KP+'u_'+currentUser.username+'_groups':K.groups;
   const dKey=currentUser?KP+'u_'+currentUser.username+'_details':K.detail;
@@ -3510,12 +3550,19 @@ function doLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value;
   if(!user||!pass){showLoginError('请填写用户名和密码');return;}
-  const stored=ls.get(KP+'account_'+user);
+  const accountKey=KP+'account_'+user;
+  let stored=ls.get(accountKey);
+  // Fallback: try cookie if localStorage missing
+  if(!stored)stored=ck.get(accountKey);
   if(!stored){showLoginError('此设备上找不到该账号——账号仅存本地，换设备或浏览器后需重新注册');return;}
+  // Restore to localStorage if it was missing
+  try{localStorage.setItem(accountKey,stored);}catch(e){}
   const acc=JSON.parse(stored);
   if(acc.hash!==simpleHash(pass)){showLoginError('密码错误');return;}
   currentUser={username:user};
   ls.set(K.user,JSON.stringify(currentUser));
+  // Also back up account info to cookie so it survives localStorage wipes
+  ck.set(accountKey,stored);
   closeLoginModal();
   loadAll();load();buildGrid();render();
   updateUserBadge();
@@ -3529,7 +3576,10 @@ function doRegister(){
   if(!user||!pass){showLoginError('请填写用户名和密码');return;}
   if(pass!==pass2){showLoginError('两次密码不一致');return;}
   if(ls.get(KP+'account_'+user)){showLoginError('用户名已被占用');return;}
-  ls.set(KP+'account_'+user,JSON.stringify({hash:simpleHash(pass)}));
+  const accountData=JSON.stringify({hash:simpleHash(pass)});
+  ls.set(KP+'account_'+user,accountData);
+  // Also back up to cookie so it survives localStorage wipes
+  ck.set(KP+'account_'+user,accountData);
   currentUser={username:user};
   ls.set(K.user,JSON.stringify(currentUser));
   closeLoginModal();
