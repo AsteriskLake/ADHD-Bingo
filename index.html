@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>ADHD Bingo</title>
+<title>Life Bingo</title>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-QSJH4PNR3R"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-QSJH4PNR3R');</script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&family=Orbitron:wght@700;900&family=Abril+Fatface&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet">
@@ -695,6 +695,7 @@ body.theme-night .timer-widget{background:var(--surface);}
     <h3 id="exportModalTitle">📦 数据导出</h3>
     <p id="exportModalDesc">「复制迁移码」用于设备间迁移（base64格式）。「结构化导出」生成可读 JSON，方便导入微信小程序等平台。</p>
     <textarea class="export-textarea" id="exportTextarea" placeholder="在此粘贴导入码…"></textarea>
+    <p style="font-size:.72rem;color:var(--coral);font-weight:700;margin:-4px 0 10px;line-height:1.6;">💡 导入步骤：先点「清空」清除内容，再将迁移码粘贴进来，最后点「导入数据」。</p>
     <div class="export-btns">
       <button class="export-btn" style="background:var(--done);color:#fff;" id="exportCopyBtn" onclick="exportCopy()">复制迁移码</button>
       <button class="export-btn" style="background:var(--purple);color:#fff;" onclick="exportUnifiedCopy()">📋 结构化导出</button>
@@ -712,7 +713,7 @@ body.theme-night .timer-widget{background:var(--surface);}
 <!-- Login Modal -->
 <div class="login-overlay" id="loginOverlay" style="display:none;">
   <div class="login-modal">
-    <div class="login-title">👾 ADHD Bingo</div>
+    <div class="login-title">👾 Life Bingo</div>
     <div class="login-sub">账号仅存本地，用于多用户隔离数据<br>换设备或浏览器需重新注册<br><span style="color:#c05040;font-weight:800;">⚠️ 请勿清除浏览器缓存，否则数据会丢失<br>建议先用 📦 备份迁移码再进行此操作</span></div>
     <div class="login-tabs">
       <button class="login-tab active" id="tabLogin" onclick="switchLoginTab('login')">登录</button>
@@ -899,7 +900,7 @@ body.theme-night .timer-widget{background:var(--surface);}
 <!-- Header -->
 <div class="header">
   <div class="header-left">
-    <div id="titleDisplay" class="title">ADHD Bingo</div>
+    <div id="titleDisplay" class="title" style="cursor:default;user-select:none;-webkit-user-select:none;">Life Bingo</div>
     <div class="date-line" id="dateDisplay"></div>
     <div class="viewing-banner" id="viewingBanner"></div>
   </div>
@@ -1007,7 +1008,7 @@ let prevRawLines=0;
 let details={};
 let mandatory=new Set();
 let detailPos=-1;
-let appName='ADHD Bingo';
+let appName='Life Bingo';
 let timestamps={};
 let currentUser=null; // {username, passwordHash}
 
@@ -1501,7 +1502,7 @@ function showMandatoryWarning(taskName){
 let actx=null;
 const getCtx=()=>{if(!actx)try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return actx;};
 function tone(f,dur,vol=0.35){try{const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(vol,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);o.start(c.currentTime);o.stop(c.currentTime+dur);}catch(e){}}
-function playComplete(){try{const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(440,c.currentTime);o.frequency.exponentialRampToValueAtTime(880,c.currentTime+0.08);o.frequency.exponentialRampToValueAtTime(660,c.currentTime+0.18);g.gain.setValueAtTime(0.4,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.28);o.start(c.currentTime);o.stop(c.currentTime+0.28);}catch(e){}}
+function playComplete(){try{const c=getCtx();if(!c)return;const t=c.currentTime;[[880,0,0.18],[1320,0.06,0.13]].forEach(([f,dt,dur])=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0,t+dt);g.gain.linearRampToValueAtTime(0.32,t+dt+0.012);g.gain.exponentialRampToValueAtTime(0.001,t+dt+dur);o.start(t+dt);o.stop(t+dt+dur+0.01);});}catch(e){}}
 function playUndo(){tone(440,.15,.18);setTimeout(()=>tone(220,.15,.12),60);}
 function playBingo(){[[523,0],[659,.12],[784,.24],[1047,.36],[1318,.5]].forEach(([f,t])=>setTimeout(()=>tone(f,.3,.38),t*1000));}
 
@@ -1527,21 +1528,7 @@ function showCheer(msgs=CHEERS,q=cheerQ){
   t.textContent=nextMsg(msgs,q);b.classList.add('show');
 }
 
-// ── Title long-press ──────────────────────────────────────────────────────────
-let titlePT=null;
-const titleEl=document.getElementById('titleDisplay');
-function startTP(){titlePT=setTimeout(()=>{titlePT=null;beginTitleEdit();},500);}
-function cancelTP(){clearTimeout(titlePT);titlePT=null;}
-function beginTitleEdit(){
-  vibrate(30);
-  const inp=document.createElement('input');
-  inp.className='title-input';inp.value=appName;inp.maxLength=20;inp.autocomplete='off';inp.spellcheck=false;
-  titleEl.replaceWith(inp);inp.focus();inp.select();
-  const fin=()=>{const v=inp.value.trim()||'ADHD Bingo';appName=v;ls.set(K.name,v);document.title=v;inp.replaceWith(titleEl);titleEl.textContent=v;};
-  inp.onblur=fin;inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}if(e.key==='Escape'){inp.value=appName;inp.blur();}};
-}
-titleEl.addEventListener('mousedown',startTP);titleEl.addEventListener('mouseup',cancelTP);titleEl.addEventListener('mouseleave',cancelTP);
-titleEl.addEventListener('touchstart',e=>{e.preventDefault();startTP();},{passive:false});titleEl.addEventListener('touchend',cancelTP);
+// Title long-press editing disabled
 
 // ── Long-press + double-tap ───────────────────────────────────────────────────
 let pressTimer=null,didLongPress=false,tapTimer=null,tapPos=-1;
