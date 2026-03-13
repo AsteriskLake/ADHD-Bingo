@@ -390,6 +390,14 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 
 /* Detail */
 #detailSheet{z-index:202;}#detailOverlay{z-index:201;}
+/* Template panel */
+#templateSheet{z-index:202;}#templateOverlay{z-index:201;}
+.tpl-item{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
+.tpl-info{flex:1;min-width:0;}
+.tpl-name{font-size:.92rem;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tpl-meta{font-size:.72rem;color:var(--text-mid);font-weight:600;margin-top:2px;}
+.tpl-apply{padding:7px 14px;border-radius:10px;border:none;background:var(--purple);color:#fff;font-family:inherit;font-size:.78rem;font-weight:900;cursor:pointer;white-space:nowrap;}
+.tpl-del{width:28px;height:28px;border-radius:50%;border:none;background:var(--coral-lt);color:#c05040;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .detail-body{overflow-y:auto;padding:0 16px 32px;flex:1;}
 .detail-name-row{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
 .detail-name-input{flex:1;border:none;background:transparent;outline:none;font-family:"PingFang SC","苹方","Noto Sans SC",sans-serif;font-size:1.05rem;font-weight:800;color:var(--text);-webkit-appearance:none;}
@@ -943,7 +951,21 @@ body.theme-night .timer-widget{background:var(--surface);}
   <button class="btn btn-shuffle" onclick="doShuffle()">🔀 随机</button>
   <button class="btn btn-reset" onclick="doReset()">↺ 重置</button>
   <button class="btn" style="background:var(--amber-lt);color:var(--amber-dk);flex:0 0 auto;padding:13px 10px;" onclick="openAchGallery()" title="成就">🏅</button>
-  <button class="btn" style="background:var(--purple-lt);color:#7b5ea7;flex:0 0 auto;padding:13px 10px;" onclick="openExportModal(false)" title="数据迁移">📦</button>
+  <button class="btn" style="background:var(--purple-lt);color:#7b5ea7;flex:0 0 auto;padding:13px 10px;" onclick="openTemplatePanel()" title="模板">🗂️</button>
+  <button class="btn" style="background:var(--green-lt);color:var(--green-dk);flex:0 0 auto;padding:13px 10px;" onclick="openExportModal(false)" title="数据迁移">📦</button>
+</div>
+
+<!-- Template Panel -->
+<div class="overlay" id="templateOverlay" onclick="closeTemplatePanel()"></div>
+<div class="sheet" id="templateSheet">
+  <div class="sheet-header">
+    <div class="sheet-title">🗂️ 格子模板</div>
+    <button class="sheet-close" onclick="closeTemplatePanel()">✕</button>
+  </div>
+  <div style="padding:0 16px 16px;">
+    <button onclick="saveAsTemplate()" style="width:100%;padding:13px;border-radius:14px;border:2px dashed var(--purple);background:var(--purple-lt);color:#7b5ea7;font-family:inherit;font-size:.88rem;font-weight:900;cursor:pointer;margin-bottom:16px;">＋ 把当前格子存为模板</button>
+    <div id="templateList"></div>
+  </div>
 </div>
 
 <!-- Achievement unlock card (floating) -->
@@ -1016,6 +1038,12 @@ let currentUser=null; // {username, passwordHash}
 
 // viewingDate: null = today, else 'YYYY-MM-DD'
 let viewingDate=null;
+
+// touchedToday: true only when the user has made a real action today
+// (toggle cell, shuffle, reset, change size, save detail, add todo…)
+// Purely viewing or jumping between dates does NOT set this.
+// save() only writes today's record when this is true.
+let touchedToday=false;
 
 // ── Achievements ──────────────────────────────────────────────────────────────
 // unlocked: Set of achievement ids
@@ -1157,6 +1185,7 @@ function load(){
     const s=ls.get(activeKey());
     if(s){
       hasSavedRecord=true;
+      touchedToday=true; // today already has a record — treat as touched
       const d=JSON.parse(s);
       if(Array.isArray(d.state))state=d.state;
       if(Array.isArray(d.order))order=d.order;
@@ -1164,20 +1193,18 @@ function load(){
       if(d.activeSnapshot) restoreActiveSnapshot(d.activeSnapshot);
     }
   }catch(e){}
-  if(state.length!==totalCells()){state=Array(totalCells()).fill(false);}
-  if(order.length!==totalCells()){order=[...Array(totalCells()).keys()];}
-
   // New day: inherit yesterday's grid layout by task name
-  if(!hasSavedRecord && !viewingDate){
+  // No saved record: inherit from the most recent past record
+  // This applies both to today (viewingDate=null) and future dates with no record yet
+  const inheritingForDate = viewingDate || todayStr();
+  if(!hasSavedRecord){
     try{
-      // Find most recent past record
       const prefix=userPrefix();
-      const today=todayStr();
       let bestDate=null;
       for(let i=0;i<localStorage.length;i++){
         const key=localStorage.key(i);if(!key.startsWith(prefix))continue;
         const d=key.replace(prefix,'');
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d>=today)continue;
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d>=inheritingForDate)continue;
         if(!bestDate||d>bestDate)bestDate=d;
       }
       if(bestDate){
@@ -1187,7 +1214,6 @@ function load(){
           gridSize=prev.gridSize;updateSizeBtns();
         }
         if(prev&&Array.isArray(prev.order)){
-          // Use saved orderedTaskNames if available (accurate), otherwise fall back to reconstruction
           const prevOrdered=Array.isArray(prev.orderedTaskNames)&&prev.orderedTaskNames.length>0
             ? prev.orderedTaskNames
             : prev.order.map(idx=>{const t=getEffectiveActiveTasks(bestDate);return idx<t.length?t[idx].name:null;}).filter(Boolean);
@@ -1209,21 +1235,31 @@ function load(){
     }catch(e){}
   }
 
+  // After all gridSize is finalised (including inheritance), validate state/order lengths
+  if(state.length!==totalCells()){state=Array(totalCells()).fill(false);}
+  if(order.length!==totalCells()){order=[...Array(totalCells()).keys()];}
+
   // Only check schedule overflow for today, and only if there's no saved record
   // (if a record exists, the user already chose a grid size — respect it)
   if(!viewingDate&&!hasSavedRecord) setTimeout(()=>checkScheduleOverflow(todayStr()),200);
 }
 function save(){
+  if(!viewingDate && !touchedToday) return;
   try{
     const done=state.filter(Boolean).length,lines=getLines().length,pct=Math.round(calcPct(done,lines));
-    // Snapshot which task names are active (manual selection, not schedule-derived)
     const activeSnapshot=[];
     for(const g of groups) for(const t of g.tasks) if(t.active) activeSnapshot.push(t.name);
-    // Also save task names in grid order — used by next day to inherit layout
     const activeTasks2=getActiveTasks();
     const orderedTaskNames=order.map(idx=>idx<activeTasks2.length?activeTasks2[idx]:null).filter(Boolean);
-    ls.set(activeKey(),JSON.stringify({state,order,done,lines,pct,gridSize,activeSnapshot,orderedTaskNames}));
+    const key=activeKey();
+    ls.set(key,JSON.stringify({state,order,done,lines,pct,gridSize,activeSnapshot,orderedTaskNames,touched:true}));
   }catch(e){}
+}
+// Call touch() before any real user action to mark today as having a record
+function touch(){
+  // For today: set the flag so save() is allowed
+  // For other dates: save() is always allowed, but we still set a flag for consistency
+  if(!viewingDate) touchedToday=true;
 }
 
 // Restore groups' active flags from a saved snapshot array of task names
@@ -1287,7 +1323,8 @@ function loadAll(){
     }
     if(tsChanged)ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
   }catch(e){}
-  try{const s=ls.get(K.size);if(s){gridSize=parseInt(s)||5;updateSizeBtns();}}catch(e){}
+  // K.size is no longer used to set gridSize on startup.
+  // gridSize is now determined solely by the daily record in load().
   try{const s=ls.get(getUserKey('achievements'));if(s){const d=JSON.parse(s);achUnlocked=new Set(d.unlocked||[]);achCustom=d.custom||{};achUserDefined=d.userDefined||[];}}catch(e){}
 }
 
@@ -1462,19 +1499,55 @@ function setViewingDate(ds){
     // load that day — restore gridSize + activeSnapshot saved with that day's data
     try{
       const s=ls.get(activeKey()); // activeKey() now uses viewingDate
-      if(s){
+      if(s&&JSON.parse(s).touched){
+        // Only use saved record if user actually did something that day
         const d=JSON.parse(s);
         if(d.gridSize&&[3,4,5,6].includes(d.gridSize)){gridSize=d.gridSize;updateSizeBtns();}
         if(Array.isArray(d.state))state=d.state;
         if(Array.isArray(d.order))order=d.order;
         if(d.activeSnapshot) restoreActiveSnapshot(d.activeSnapshot);
       } else {
+        // No real record for this date — inherit from the most recent past record
+        const prefix=userPrefix();
+        let bestDate=null;
+        for(let i=0;i<localStorage.length;i++){
+          const key=localStorage.key(i);if(!key.startsWith(prefix))continue;
+          const d=key.replace(prefix,'');
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d>=viewingDate)continue;
+          if(!bestDate||d>bestDate)bestDate=d;
+        }
+        if(bestDate){
+          const prev=JSON.parse(ls.get(prefix+bestDate));
+          if(prev&&prev.gridSize&&[3,4,5,6].includes(prev.gridSize)){gridSize=prev.gridSize;updateSizeBtns();}
+          if(prev&&Array.isArray(prev.order)){
+            const prevOrdered=Array.isArray(prev.orderedTaskNames)&&prev.orderedTaskNames.length>0
+              ? prev.orderedTaskNames
+              : prev.order.map(idx=>{const t=getEffectiveActiveTasks(bestDate);return idx<t.length?t[idx].name:null;}).filter(Boolean);
+            if(prevOrdered.length>0){
+              const todayTasks=getActiveTasks();
+              const todayIndexOf={};todayTasks.forEach((n,i)=>todayIndexOf[n]=i);
+              const used=new Set();const newOrder=[];
+              prevOrdered.forEach(name=>{if(todayIndexOf[name]!==undefined&&!used.has(name)){newOrder.push(todayIndexOf[name]);used.add(name);}});
+              todayTasks.forEach((name,i)=>{if(!used.has(name)){newOrder.push(i);used.add(name);}});
+              order=newOrder;
+            } else {
+              order=[...Array(totalCells()).keys()];
+            }
+          } else {
+            order=[...Array(totalCells()).keys()];
+          }
+        } else {
+          order=[...Array(totalCells()).keys()];
+        }
         state=Array(totalCells()).fill(false);
-        order=[...Array(totalCells()).keys()];
       }
     }catch(e){state=Array(totalCells()).fill(false);order=[...Array(totalCells()).keys()];}
-    if(state.length!==totalCells()){state=Array(totalCells()).fill(false);}
-    if(order.length!==totalCells()){order=[...Array(totalCells()).keys()];}
+    // After gridSize finalised, validate lengths
+    if(state.length!==totalCells()) state=Array(totalCells()).fill(false);
+    if(order.length!==totalCells()){
+      if(order.length>totalCells()) order=order.slice(0,totalCells());
+      else{const used=new Set(order);for(let i=0;order.length<totalCells();i++){if(!used.has(i)){order.push(i);used.add(i);}}}
+    }
   }
   prevLines=0;
   updateViewingUI();
@@ -1512,7 +1585,7 @@ function setSize(n){
     return;
   }
   const oldSize=gridSize;
-  gridSize=n;ls.set(K.size,n);
+  gridSize=n;
   const activeTasks=getActiveTasks();
   const allIdxs=[...Array(activeTasks.length).keys()];
 
@@ -1547,7 +1620,7 @@ function setSize(n){
     const idx=order[pos];
     if(idx<activeTasks.length&&doneNames.has(activeTasks[idx]))state[pos]=true;
   }
-  prevLines=0;updateSizeBtns();save();buildGrid();render();
+  prevLines=0;updateSizeBtns();touch();save();buildGrid();render();
 }
 function updateSizeBtns(){
   [3,4,5,6].forEach(n=>{
@@ -2165,7 +2238,7 @@ function toggleTaskActive(gi,ti){
   order=newOrder.slice(0,n);
   state=Array(n).fill(false);
   for(let pos=0;pos<n;pos++){const idx=order[pos];if(idx<activeTasks.length&&doneNames.has(activeTasks[idx]))state[pos]=true;}
-  save();renderTaskPanel();buildGrid();render();
+  touch();save();renderTaskPanel();buildGrid();render();
 }
 function bubbleDelete(gi,ti){
   if(!groups[gi]||!groups[gi].tasks[ti])return;
@@ -2254,7 +2327,7 @@ function applyTaskSelection(){
     const idx=order[pos];
     if(idx<activeTasks.length&&doneNames.has(activeTasks[idx]))state[pos]=true;
   }
-  prevLines=0;save();closeTaskPanel();buildGrid();render();showToast('任务列表已更新 ✓');
+  prevLines=0;touch();save();closeTaskPanel();buildGrid();render();showToast('任务列表已更新 ✓');
 }
 
 // ── Schedule Sheet ────────────────────────────────────────────────────────────
@@ -2489,7 +2562,7 @@ function timerFinish(){
     // 同步任务状态为完成
     if(!state[detailPos]){state[detailPos]=true;recordTS(taskName);}
     ls.set(getUserKey('timestamps'),JSON.stringify(timestamps));
-    save();render();buildGrid();checkAchievements();
+    touch();save();render();buildGrid();checkAchievements();
   }
 
   // ── 更新 detail 面板 UI（不关闭，允许继续计时）────────────────────────
@@ -2575,6 +2648,7 @@ function autoSaveDetail(){
   if(detailPos<0)return;
   const taskName=getTaskName(detailPos);
   if(!taskName)return;
+  touch(); // writing notes/todos counts as a real action
   const todayNotes=document.getElementById('detailNotes').value;
   const todayTodos=getCurrentTodos();
   saveDetailDay(taskName,activeDate(),todayNotes,todayTodos);
@@ -2652,7 +2726,7 @@ function saveDetail(){
   const allTodoTexts=new Set((details[newName].template?.todos||[]).map(t=>t.text));
   todayTodos.forEach(t=>{if(!allTodoTexts.has(t.text))allTodoTexts.add(t.text);});
   details[newName].template={todos:[...allTodoTexts].map(t=>({text:t,done:false}))};
-  ls.set(getUserKey('details'),JSON.stringify(details));save();
+  ls.set(getUserKey('details'),JSON.stringify(details));touch();save();
   if(isDone&&!wasDone){vibrate([30,60]);const c=document.querySelector(`.cell[data-i="${detailPos}"]`);if(c){burstParticles(c);playComplete();}showCheer();}
   closeDetail();render();buildGrid();checkAchievements();showToast('已保存 ✓');
 }
@@ -2738,6 +2812,122 @@ function getAllHistory(){
   }
   return entries.sort((a,b)=>b.dateStr.localeCompare(a.dateStr));
 }
+// ── Template Panel ────────────────────────────────────────────────────────────
+function getTemplates(){
+  try{const s=ls.get(getUserKey('gridTemplates'));return s?JSON.parse(s):[];}catch(e){return[];}
+}
+function saveTemplates(tpls){
+  ls.set(getUserKey('gridTemplates'),JSON.stringify(tpls));
+}
+function openTemplatePanel(){
+  renderTemplateList();
+  document.getElementById('templateOverlay').classList.add('open');
+  document.getElementById('templateSheet').classList.add('open');
+}
+function closeTemplatePanel(){
+  document.getElementById('templateOverlay').classList.remove('open');
+  document.getElementById('templateSheet').classList.remove('open');
+}
+function renderTemplateList(){
+  const list=document.getElementById('templateList');
+  const tpls=getTemplates();
+  if(!tpls.length){
+    list.innerHTML='<div style="text-align:center;color:var(--text-lt);font-size:.85rem;font-weight:600;padding:24px 0;">还没有模板<br>把今天的格子存为模板开始吧 ✨</div>';
+    return;
+  }
+  list.innerHTML=tpls.map((t,i)=>`
+    <div class="tpl-item">
+      <div class="tpl-info">
+        <div class="tpl-name">${escHtml(t.name)}</div>
+        <div class="tpl-meta">${t.gridSize}×${t.gridSize} · ${t.taskNames.length} 个任务</div>
+      </div>
+      <button class="tpl-apply" onclick="applyTemplate(${i})">套用</button>
+      <button class="tpl-del" onclick="deleteTemplate(${i})" title="删除">✕</button>
+    </div>
+  `).join('');
+}
+function saveAsTemplate(){
+  // Show inline name input inside the panel instead of prompt()
+  const existing=document.getElementById('tplNameInputRow');
+  if(existing){existing.remove();return;}
+  const row=document.createElement('div');
+  row.id='tplNameInputRow';
+  row.style.cssText='display:flex;gap:8px;margin-bottom:12px;';
+  row.innerHTML=`
+    <input id="tplNameInput" maxlength="20" placeholder="模板名称…"
+      style="flex:1;padding:11px 14px;border-radius:12px;border:2px solid var(--purple);font-size:.88rem;font-family:inherit;font-weight:700;outline:none;background:var(--bg);color:var(--text);"
+    />
+    <button onclick="confirmSaveTemplate()" style="padding:11px 16px;border-radius:12px;border:none;background:var(--purple);color:#fff;font-family:inherit;font-size:.88rem;font-weight:900;cursor:pointer;">保存</button>
+  `;
+  const btn=document.querySelector('#templateSheet .sheet-header');
+  btn.insertAdjacentElement('afterend',row);
+  document.getElementById('tplNameInput').focus();
+}
+function confirmSaveTemplate(){
+  const inp=document.getElementById('tplNameInput');
+  if(!inp)return;
+  const name=inp.value.trim();
+  if(!name){inp.focus();return;}
+  const activeTasks=getActiveTasks();
+  const taskNames=order.slice(0,totalCells()).map(idx=>idx<activeTasks.length?activeTasks[idx]:null).filter(Boolean);
+  const tpl={name,gridSize,taskNames,createdAt:activeDate()};
+  const tpls=getTemplates();
+  tpls.push(tpl);
+  saveTemplates(tpls);
+  document.getElementById('tplNameInputRow')?.remove();
+  renderTemplateList();
+  showToast('模板已保存 ✓');
+}
+function applyTemplate(i){
+  const tpls=getTemplates();
+  const tpl=tpls[i];
+  if(!tpl)return;
+  // Collect currently done task names to preserve completion
+  const doneNames=new Set();
+  for(let pos=0;pos<state.length;pos++){
+    if(state[pos]){const nm=getTaskName(pos);if(nm)doneNames.add(nm);}
+  }
+  // Apply grid size
+  touch();
+  gridSize=tpl.gridSize;updateSizeBtns();
+  // Build new order from template task names
+  const activeTasks=getActiveTasks();
+  const nameToIdx={};activeTasks.forEach((n,idx)=>nameToIdx[n]=idx);
+  const used=new Set();
+  const newOrder=[];
+  tpl.taskNames.forEach(name=>{
+    if(nameToIdx[name]!==undefined&&!used.has(name)){
+      newOrder.push(nameToIdx[name]);used.add(name);
+    }
+  });
+  // Fill remaining slots with tasks not in template
+  activeTasks.forEach((name,idx)=>{
+    if(!used.has(name)){newOrder.push(idx);used.add(name);}
+  });
+  // Pad/trim to grid size
+  while(newOrder.length<totalCells())newOrder.push(newOrder.length);
+  order=newOrder.slice(0,totalCells());
+  // Rebuild state preserving done tasks by name
+  state=Array(totalCells()).fill(false);
+  for(let pos=0;pos<totalCells();pos++){
+    const idx=order[pos];
+    if(idx<activeTasks.length&&doneNames.has(activeTasks[idx]))state[pos]=true;
+  }
+  prevLines=0;save();closeTemplatePanel();buildGrid();render();
+  showToast(`已套用模板「${escHtml(tpl.name)}」✓`);
+}
+function deleteTemplate(i){
+  const tpls=getTemplates();
+  const tpl=tpls[i];
+  if(!tpl)return;
+  showConfirm(`确定删除模板「${escHtml(tpl.name)}」？`,()=>{
+    tpls.splice(i,1);
+    saveTemplates(tpls);
+    renderTemplateList();
+    showToast('模板已删除');
+  });
+}
+
 function openHistory(){
   const entries=getAllHistory(),list=document.getElementById('historyList');list.innerHTML='';
   if(!entries.length){list.innerHTML='<div class="history-empty">还没有记录<br>今天完成第一项就会自动保存 ✨</div>';
@@ -2965,7 +3155,7 @@ function openSubtaskPopup(pos, taskName, todosInit){
       state[pos]=true;
       // Also update todos as all done in storage
       saveDetailDay(taskName,activeDate(),getDetailDay(taskName,activeDate()).notes||'',todos.map(t=>({...t,done:true})));
-      save();
+      touch();save();
       const c=document.querySelector(`.cell[data-i="${pos}"]`);
       if(c){
         // Clear fill since cell is now fully active
@@ -3076,7 +3266,7 @@ function toggle(pos){
       return;
     }
   }
-  state[pos]=!state[pos];save();
+  state[pos]=!state[pos];touch();save();
   const c=document.querySelector(`.cell[data-i="${pos}"]`);
   c.classList.toggle('active',state[pos]);
   if(!state[pos]){c.style.background=c.dataset.bg;c.style.color=c.dataset.fg;}else{c.style.background='';c.style.color='';}
@@ -3148,9 +3338,9 @@ function doShuffle(){
     const idx=order[pos];
     state[pos]=idx<activeTasks.length?(doneByName[activeTasks[idx]]||false):false;
   }
-  save();buildGrid();render();showToast('已随机排列 🔀');
+  touch();save();buildGrid();render();showToast('已随机排列 🔀');
 }
-function doReset(){state=Array(totalCells()).fill(false);prevLines=0;prevRawLines=0;syncTimestampsToState();save();buildGrid();render();showToast('已重置');}
+function doReset(){state=Array(totalCells()).fill(false);prevLines=0;prevRawLines=0;syncTimestampsToState();touch();save();buildGrid();render();showToast('已重置');}
 
 // ── Achievements ──────────────────────────────────────────────────────────────
 function saveAch(){ls.set(getUserKey('achievements'),JSON.stringify({unlocked:[...achUnlocked],custom:achCustom,userDefined:achUserDefined}));}
@@ -3908,8 +4098,6 @@ const now=new Date(),WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 document.getElementById('dateDisplay').textContent=`${now.getFullYear()} · ${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} · ${WD[now.getDay()]}`;
 loadAll();load();loadTheme();buildGrid();render();
 updateSizeBtns();
-// Purge any stale timestamps left over from old bugs
-save();
 checkPWAFirstRun();
 // Fix iOS Safari: force opacity:1 on animated elements after animation ends
 // (prevents black rectangle ghost on scroll)
