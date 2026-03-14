@@ -1509,6 +1509,26 @@ function getPastDailyEntries(taskName){
 }
 
 // ── Viewing date ──────────────────────────────────────────────────────────────
+
+// Build an order array that puts scheduledDates tasks first,
+// so they always land within the visible grid slots.
+function buildSchedulePriorityOrder(dateStr){
+  const todayTasks=getEffectiveActiveTasks(dateStr).map(t=>t.name);
+  const scheduledFirst=[];
+  const rest=[];
+  for(let i=0;i<todayTasks.length;i++){
+    // find the task object to check scheduledDates
+    let taskObj=null;
+    for(const g of groups){const found=g.tasks.find(t=>t.name===todayTasks[i]);if(found){taskObj=found;break;}}
+    if(taskObj&&taskObj.scheduledDates&&taskObj.scheduledDates.includes(dateStr)){
+      scheduledFirst.push(i);
+    } else {
+      rest.push(i);
+    }
+  }
+  return [...scheduledFirst,...rest];
+}
+
 function setViewingDate(ds){
   // Auto-save any open detail panel notes before switching
   if(detailPos>=0) autoSaveDetail();
@@ -1528,7 +1548,18 @@ function setViewingDate(ds){
         if(d.gridSize&&[3,4,5,6].includes(d.gridSize)){gridSize=d.gridSize;updateSizeBtns();}
         if(Array.isArray(d.state))state=d.state;
         if(Array.isArray(d.order))order=d.order;
-        if(d.activeSnapshot) restoreActiveSnapshot(d.activeSnapshot);
+        if(d.activeSnapshot){
+          restoreActiveSnapshot(d.activeSnapshot);
+        } else if(Array.isArray(d.orderedTaskNames)&&d.orderedTaskNames.length>0){
+          const snapSet=new Set(d.orderedTaskNames);
+          for(const g of groups) for(const t of g.tasks){if(!taskHasSchedule(t))t.active=snapSet.has(t.name);}
+          const currentTasks=getActiveTasks();
+          const nameToIdx={};currentTasks.forEach((n,i)=>nameToIdx[n]=i);
+          const rebuiltOrder=d.orderedTaskNames.map(n=>nameToIdx[n]).filter(i=>i!==undefined);
+          const used=new Set(rebuiltOrder);
+          currentTasks.forEach((_,i)=>{if(!used.has(i))rebuiltOrder.push(i);});
+          order=rebuiltOrder;
+        }
       } else {
         // No real record for this date — inherit from the most recent past record
         const prefix=userPrefix();
@@ -1550,17 +1581,20 @@ function setViewingDate(ds){
               const todayTasks=getActiveTasks();
               const todayIndexOf={};todayTasks.forEach((n,i)=>todayIndexOf[n]=i);
               const used=new Set();const newOrder=[];
+              // scheduledDates tasks must appear first so they land within totalCells() slots
+              const scheduledNames=new Set();
+              for(const g of groups)for(const t of g.tasks){if(t.scheduledDates&&t.scheduledDates.length>0&&t.scheduledDates.includes(viewingDate)&&todayIndexOf[t.name]!==undefined&&!used.has(t.name)){newOrder.push(todayIndexOf[t.name]);used.add(t.name);scheduledNames.add(t.name);}}
               prevOrdered.forEach(name=>{if(todayIndexOf[name]!==undefined&&!used.has(name)){newOrder.push(todayIndexOf[name]);used.add(name);}});
               todayTasks.forEach((name,i)=>{if(!used.has(name)){newOrder.push(i);used.add(name);}});
               order=newOrder;
             } else {
-              order=[...Array(totalCells()).keys()];
+              order=buildSchedulePriorityOrder(viewingDate);
             }
           } else {
-            order=[...Array(totalCells()).keys()];
+            order=buildSchedulePriorityOrder(viewingDate);
           }
         } else {
-          order=[...Array(totalCells()).keys()];
+          order=buildSchedulePriorityOrder(viewingDate);
         }
         state=Array(totalCells()).fill(false);
       }
