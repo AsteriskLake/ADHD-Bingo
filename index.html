@@ -520,13 +520,14 @@ body.theme-night .timer-widget{background:var(--surface);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;}
 .cal-dow{text-align:center;font-size:.62rem;font-weight:800;color:var(--text-lt);padding:4px 0;}
 .cal-day{aspect-ratio:1/1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .18s;position:relative;}
-.cal-day:hover{background:var(--done-lt);}
+@media(hover:hover){.cal-day:hover{background:var(--done-lt);}}
 .cal-day.empty-day{pointer-events:none;}
 .cal-day-num{font-size:.8rem;font-weight:800;color:var(--text-mid);line-height:1;}
 .cal-day.today .cal-day-num{color:var(--done-dk);}
 .cal-day.today{background:var(--done-lt);}
+.cal-day.has-data{background:var(--done-lt);border-radius:10px;}
 .cal-day.has-data .cal-day-num{color:var(--text);}
-.cal-day.selected{outline:2px solid var(--done);outline-offset:1px;border-radius:10px;}
+.cal-day.selected{box-shadow:0 0 0 2.5px var(--done);border-radius:10px;}
 .cal-day-dots{display:flex;gap:2px;margin-top:2px;justify-content:center;}
 .cal-dot{width:5px;height:5px;border-radius:50%;background:var(--done);flex-shrink:0;}
 .cal-dot.bingo{background:var(--amber-dk);}
@@ -542,6 +543,43 @@ body.theme-night .timer-widget{background:var(--surface);}
 .cal-ts-time{color:var(--text-lt);font-size:.68rem;min-width:38px;}
 .cal-save-btn{width:100%;padding:11px;border-radius:12px;border:none;background:var(--done);color:#fff;font-family:"Nunito","Noto Sans SC",sans-serif;font-size:.85rem;font-weight:900;cursor:pointer;margin-top:8px;}
 .cal-empty{font-size:.82rem;color:var(--text-lt);font-weight:600;text-align:center;padding:16px;}
+
+/* Calendar year view toggle */
+.cal-toggle-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;color:var(--text-mid);margin-left:6px;transition:background .18s;}
+@media(hover:hover){.cal-toggle-btn:hover{background:var(--done-lt);}}
+/* Year view */
+.cal-year-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;}
+.cal-year-label{font-size:1.05rem;font-weight:900;color:var(--text);}
+.cal-year-view{display:none;}
+.cal-year-view.active{display:block;}
+.cal-month-view{display:block;}
+.cal-month-view.hidden{display:none;}
+.cal-year-container{max-width:400px;margin:0 auto;}
+.cal-year-block{margin-bottom:20px;padding:0 4px;}
+.cal-year-block-title{font-size:.8rem;font-weight:900;color:var(--text);margin-bottom:4px;padding:6px 8px;border-radius:8px;cursor:pointer;transition:background .18s,color .18s;display:inline-block;}
+@media(hover:hover){.cal-year-block-title:hover{background:var(--done-lt);color:var(--done-dk);}}
+.cal-year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 2px;}
+.cal-year-dow{text-align:center;font-size:.5rem;font-weight:700;color:var(--text-lt);padding:1px 0;}
+.cal-year-day{height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:600;color:var(--text-lt);position:relative;}
+.cal-year-day.empty-day{pointer-events:none;}
+.cal-year-day.today{background:var(--done-lt);color:var(--done-dk);font-weight:900;border-radius:5px;}
+.cal-year-day.has-data{color:var(--text);font-weight:800;background:var(--done-lt);border-radius:5px;}
+.cal-year-day.has-data::after{content:'';position:absolute;bottom:1px;width:4px;height:4px;border-radius:50%;background:var(--done);}
+.cal-year-day.has-bingo::after{background:var(--amber-dk);}
+.cal-year-hint{text-align:center;font-size:.68rem;font-weight:700;color:var(--text-lt);margin-bottom:12px;}
+
+/* Task Calendar (打卡记录) */
+.tcal-legend{display:flex;justify-content:center;gap:16px;margin-bottom:12px;font-size:.68rem;font-weight:700;color:var(--text-lt);}
+.tcal-legend-item{display:flex;align-items:center;gap:4px;}
+.tcal-legend-box{width:14px;height:14px;border-radius:4px;}
+.tcal-legend-box.present{background:var(--done-lt);}
+.tcal-legend-box.done{background:var(--done-lt);box-shadow:inset 0 0 0 2px var(--done);}
+.cal-day.tcal-present{background:var(--done-lt);border-radius:10px;}
+.cal-day.tcal-present .cal-day-num{color:var(--text);}
+.cal-day.tcal-done{box-shadow:inset 0 0 0 2.5px var(--done);}
+.cal-year-day.tcal-present{background:var(--done-lt);color:var(--text);font-weight:800;border-radius:5px;}
+.cal-year-day.tcal-done{box-shadow:inset 0 0 0 1.5px var(--done);}
+.tcal-stats{text-align:center;font-size:.72rem;font-weight:700;color:var(--text-mid);margin-bottom:10px;}
 
 /* Subtask progress fill inside cell */
 .cell-progress-fill{position:absolute;bottom:0;left:0;width:100%;height:0%;background:var(--done);opacity:.35;transition:height .4s cubic-bezier(.4,0,.2,1);pointer-events:none;border-radius:0 0 9px 9px;}
@@ -791,16 +829,62 @@ body.theme-night .timer-widget{background:var(--surface);}
 <div class="overlay" id="calOverlay" onclick="closeCal()"></div>
 <div class="sheet" id="calSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-header"><div class="sheet-title">📅 日历</div><button class="sheet-close" onclick="closeCal()">✕</button></div>
+  <div class="sheet-header"><div class="sheet-title">📅 日历</div><div style="display:flex;align-items:center;gap:2px;"><button class="cal-toggle-btn" id="calToggleBtn" onclick="toggleCalView()" title="展开年视图">↑</button><button class="sheet-close" onclick="closeCal()">✕</button></div></div>
   <div class="cal-body">
-    <div class="cal-nav">
-      <button class="cal-nav-btn" onclick="calPrev()">‹</button>
-      <div class="cal-month-label" id="calMonthLabel"></div>
-      <button class="cal-nav-btn" onclick="calNext()">›</button>
+    <!-- Month View (default) -->
+    <div id="calMonthView" class="cal-month-view">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button class="cal-nav-btn" onclick="calNext()">›</button>
+      </div>
+      <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--text-lt);margin-bottom:10px;">单击预览 · 双击跳转编辑</div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div id="calDetail"></div>
     </div>
-    <div style="text-align:center;font-size:.68rem;font-weight:700;color:var(--text-lt);margin-bottom:10px;">单击预览 · 双击跳转编辑</div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div id="calDetail"></div>
+    <!-- Year View (hidden by default) -->
+    <div id="calYearView" class="cal-year-view">
+      <div class="cal-year-nav">
+        <button class="cal-nav-btn" onclick="calYearPrev()">‹</button>
+        <div class="cal-year-label" id="calYearLabel"></div>
+        <button class="cal-nav-btn" onclick="calYearNext()">›</button>
+      </div>
+      <div class="cal-year-hint">点击月份名称 → 跳转到月视图</div>
+      <div id="calYearGrid" class="cal-year-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Calendar Sheet (打卡记录) -->
+<div class="overlay" id="tcalOverlay" onclick="closeTaskCal()"></div>
+<div class="sheet" id="tcalSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><div class="sheet-title" id="tcalTitle">📊 打卡记录</div><div style="display:flex;align-items:center;gap:2px;"><button class="cal-toggle-btn" id="tcalToggleBtn" onclick="toggleTaskCalView()" title="展开年视图">↑</button><button class="sheet-close" onclick="closeTaskCal()">✕</button></div></div>
+  <div class="cal-body">
+    <div class="tcal-legend">
+      <div class="tcal-legend-item"><div class="tcal-legend-box present"></div>有任务</div>
+      <div class="tcal-legend-item"><div class="tcal-legend-box done"></div>已完成</div>
+    </div>
+    <div id="tcalStats" class="tcal-stats"></div>
+    <!-- Month View -->
+    <div id="tcalMonthView" class="cal-month-view">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="tcalPrev()">‹</button>
+        <div class="cal-month-label" id="tcalMonthLabel"></div>
+        <button class="cal-nav-btn" onclick="tcalNext()">›</button>
+      </div>
+      <div class="cal-grid" id="tcalGrid"></div>
+    </div>
+    <!-- Year View -->
+    <div id="tcalYearView" class="cal-year-view">
+      <div class="cal-year-nav">
+        <button class="cal-nav-btn" onclick="tcalYearPrev()">‹</button>
+        <div class="cal-year-label" id="tcalYearLabel"></div>
+        <button class="cal-nav-btn" onclick="tcalYearNext()">›</button>
+      </div>
+      <div class="cal-year-hint">点击月份名称 → 跳转到月视图</div>
+      <div id="tcalYearGrid" class="cal-year-container"></div>
+    </div>
   </div>
 </div>
 
@@ -3189,8 +3273,20 @@ let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calSelDate=n
 const DOW=['日','一','二','三','四','五','六'];
 const MONTHS_CN=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-function openCal(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();calSelDate=viewingDate||todayStr();renderCal();document.getElementById('calOverlay').classList.add('open');document.getElementById('calSheet').classList.add('open');}
+let calViewMode='month'; // 'month' or 'year'
+function openCal(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();calSelDate=viewingDate||todayStr();calViewMode='month';syncCalView();renderCal();document.getElementById('calOverlay').classList.add('open');document.getElementById('calSheet').classList.add('open');}
 function closeCal(){document.getElementById('calOverlay').classList.remove('open');document.getElementById('calSheet').classList.remove('open');}
+function syncCalView(){
+  const mv=document.getElementById('calMonthView'),yv=document.getElementById('calYearView'),tb=document.getElementById('calToggleBtn');
+  if(calViewMode==='year'){mv.classList.add('hidden');yv.classList.add('active');tb.textContent='↓';tb.title='收起为月视图';}
+  else{mv.classList.remove('hidden');yv.classList.remove('active');tb.textContent='↑';tb.title='展开年视图';}
+}
+function toggleCalView(){
+  calViewMode=calViewMode==='month'?'year':'month';
+  syncCalView();
+  if(calViewMode==='year')renderYearView();
+  else renderCal();
+}
 function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCal();}
 function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCal();}
 function calGoToDay(ds){closeCal();setViewingDate(ds);}
@@ -3271,6 +3367,152 @@ function showCalPreview(ds,data){
   html+=`<button class="cal-save-btn" onclick="calGoToDay('${ds}')">${isToday?'返回今天 ↩':'跳转到这天编辑 →'}</button>`;
   html+=`</div>`;
   det.innerHTML=html;
+}
+
+// ── Calendar Year View ───────────────────────────────────────────────────────
+function calYearPrev(){calYear--;renderYearView();}
+function calYearNext(){calYear++;renderYearView();}
+function calYearGoMonth(m){calMonth=m;calViewMode='month';syncCalView();renderCal();}
+
+function renderYearView(){
+  document.getElementById('calYearLabel').textContent=calYear+'年';
+  const container=document.getElementById('calYearGrid');container.innerHTML='';
+  const hmap=getHistoryMap(),today=todayStr();
+  for(let m=0;m<12;m++){
+    const block=document.createElement('div');block.className='cal-year-block';
+    const title=document.createElement('div');title.className='cal-year-block-title';
+    title.textContent=MONTHS_CN[m];
+    title.onclick=()=>calYearGoMonth(m);
+    block.appendChild(title);
+    const grid=document.createElement('div');grid.className='cal-year-grid';
+    DOW.forEach(d=>{const el=document.createElement('div');el.className='cal-year-dow';el.textContent=d;grid.appendChild(el);});
+    const firstDay=new Date(calYear,m,1).getDay();
+    const daysInMonth=new Date(calYear,m+1,0).getDate();
+    for(let i=0;i<firstDay;i++){const el=document.createElement('div');el.className='cal-year-day empty-day';grid.appendChild(el);}
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${calYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const data=hmap[ds];
+      const lines=data?(data.lines??0):0,done=data?(data.done??0):0;
+      const el=document.createElement('div');
+      el.className='cal-year-day'+(data?' has-data':'')+(lines>0?' has-bingo':'')+(ds===today?' today':'');
+      el.textContent=d;
+      grid.appendChild(el);
+    }
+    block.appendChild(grid);
+    container.appendChild(block);
+  }
+}
+
+// ── Task Calendar (打卡记录) ──────────────────────────────────────────────────
+let tcalYear,tcalMonth,tcalViewMode='month',tcalTaskName='';
+
+function getTaskHistoryMap(taskName){
+  const hmap=getHistoryMap();
+  const result={};
+  for(const date in hmap){
+    const rec=hmap[date];
+    if(Array.isArray(rec.orderedTaskNames)&&rec.orderedTaskNames.length>0){
+      const pos=rec.orderedTaskNames.indexOf(taskName);
+      if(pos>=0){
+        const done=Array.isArray(rec.state)&&pos<rec.state.length&&!!rec.state[pos];
+        result[date]={present:true,done};
+      }
+    } else if(Array.isArray(rec.activeSnapshot)){
+      if(rec.activeSnapshot.includes(taskName)){
+        let done=false;
+        if(Array.isArray(rec.order)&&Array.isArray(rec.state)){
+          const snapIdx=rec.activeSnapshot.indexOf(taskName);
+          const pos=rec.order.indexOf(snapIdx);
+          if(pos>=0&&pos<rec.state.length) done=!!rec.state[pos];
+        }
+        result[date]={present:true,done};
+      }
+    }
+  }
+  return result;
+}
+
+function openTaskCal(taskName){
+  tcalTaskName=taskName;
+  tcalYear=new Date().getFullYear();tcalMonth=new Date().getMonth();
+  tcalViewMode='month';syncTaskCalView();
+  document.getElementById('tcalTitle').textContent='📊 '+taskName;
+  renderTaskCal();
+  document.getElementById('tcalOverlay').classList.add('open');
+  document.getElementById('tcalSheet').classList.add('open');
+}
+function closeTaskCal(){document.getElementById('tcalOverlay').classList.remove('open');document.getElementById('tcalSheet').classList.remove('open');}
+function syncTaskCalView(){
+  const mv=document.getElementById('tcalMonthView'),yv=document.getElementById('tcalYearView'),tb=document.getElementById('tcalToggleBtn');
+  if(tcalViewMode==='year'){mv.classList.add('hidden');yv.classList.add('active');tb.textContent='↓';tb.title='收起为月视图';}
+  else{mv.classList.remove('hidden');yv.classList.remove('active');tb.textContent='↑';tb.title='展开年视图';}
+}
+function toggleTaskCalView(){
+  tcalViewMode=tcalViewMode==='month'?'year':'month';
+  syncTaskCalView();
+  if(tcalViewMode==='year')renderTaskYearView();
+  else renderTaskCal();
+}
+function tcalPrev(){tcalMonth--;if(tcalMonth<0){tcalMonth=11;tcalYear--;}renderTaskCal();}
+function tcalNext(){tcalMonth++;if(tcalMonth>11){tcalMonth=0;tcalYear++;}renderTaskCal();}
+function tcalYearPrev(){tcalYear--;renderTaskYearView();}
+function tcalYearNext(){tcalYear++;renderTaskYearView();}
+function tcalYearGoMonth(m){tcalMonth=m;tcalViewMode='month';syncTaskCalView();renderTaskCal();}
+
+function renderTaskCal(){
+  const tmap=getTaskHistoryMap(tcalTaskName);
+  const today=todayStr();
+  document.getElementById('tcalMonthLabel').textContent=tcalYear+'年 '+MONTHS_CN[tcalMonth];
+  const grid=document.getElementById('tcalGrid');grid.innerHTML='';
+  DOW.forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+  const firstDay=new Date(tcalYear,tcalMonth,1).getDay();
+  const daysInMonth=new Date(tcalYear,tcalMonth+1,0).getDate();
+  for(let i=0;i<firstDay;i++){const el=document.createElement('div');el.className='cal-day empty-day';grid.appendChild(el);}
+  // Stats
+  let presentCount=0,doneCount=0;
+  for(const date in tmap){if(tmap[date].present)presentCount++;if(tmap[date].done)doneCount++;}
+  document.getElementById('tcalStats').textContent=`共 ${presentCount} 天有任务 · ${doneCount} 天已完成`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${tcalYear}-${String(tcalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const info=tmap[ds];
+    const present=info&&info.present;
+    const done=info&&info.done;
+    const el=document.createElement('div');
+    el.className='cal-day'+(present?' tcal-present':'')+(done?' tcal-done':'')+(ds===today?' today':'');
+    el.innerHTML=`<div class="cal-day-num">${d}</div>`;
+    grid.appendChild(el);
+  }
+}
+
+function renderTaskYearView(){
+  const tmap=getTaskHistoryMap(tcalTaskName);
+  const today=todayStr();
+  document.getElementById('tcalYearLabel').textContent=tcalYear+'年';
+  const container=document.getElementById('tcalYearGrid');container.innerHTML='';
+  for(let m=0;m<12;m++){
+    const block=document.createElement('div');block.className='cal-year-block';
+    const title=document.createElement('div');title.className='cal-year-block-title';
+    title.textContent=MONTHS_CN[m];
+    title.onclick=(()=>{const mm=m;return()=>tcalYearGoMonth(mm);})();
+    block.appendChild(title);
+    const grid=document.createElement('div');grid.className='cal-year-grid';
+    DOW.forEach(d=>{const el=document.createElement('div');el.className='cal-year-dow';el.textContent=d;grid.appendChild(el);});
+    const firstDay=new Date(tcalYear,m,1).getDay();
+    const daysInMonth=new Date(tcalYear,m+1,0).getDate();
+    for(let i=0;i<firstDay;i++){const el=document.createElement('div');el.className='cal-year-day empty-day';grid.appendChild(el);}
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${tcalYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const info=tmap[ds];
+      const present=info&&info.present;
+      const done=info&&info.done;
+      const el=document.createElement('div');
+      el.className='cal-year-day'+(present?' tcal-present':'')+(done?' tcal-done':'')+(ds===today?' today':'');
+      el.textContent=d;
+      grid.appendChild(el);
+    }
+    block.appendChild(grid);
+    container.appendChild(block);
+  }
 }
 
 // ── Subtask Popup ─────────────────────────────────────────────────────────────
@@ -3826,6 +4068,7 @@ function showBubbleMenu(gi,ti){
     <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:16px 16px calc(16px + env(safe-area-inset-bottom));">
       <div style="font-size:.85rem;font-weight:900;color:var(--text-mid);text-align:center;padding:4px 0 14px;border-bottom:1px solid var(--bg);margin-bottom:8px;">${escHtml(name)}${hasSchedule?' 📅':''}</div>
       ${hasNotes?`<button id="bmNotes" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--done-lt);color:var(--done-dk);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">📝 查看所有备注</button>`:''}
+      <button id="bmTaskCal" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--done-lt);color:var(--done-dk);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">📊 打卡记录</button>
       <button id="bmRename" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--purple-lt);color:var(--purple);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">✏️ 修改名称</button>
       <button id="bmMoveGroup" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--green-lt);color:var(--green-dk);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">📂 修改分组</button>
       <button id="bmSched" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--amber-lt);color:var(--amber-dk);font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:8px;text-align:left;">📅 设置时间</button>
@@ -3840,6 +4083,7 @@ function showBubbleMenu(gi,ti){
   document.getElementById('bmMoveGroup').onclick=()=>{close();showMoveGroupDialog(gi,ti);};
   document.getElementById('bmSched').onclick=()=>{close();openSchedSheet(gi,ti);};
   if(hasNotes) document.getElementById('bmNotes').onclick=()=>{close();openNotesHistory(name);};
+  document.getElementById('bmTaskCal').onclick=()=>{close();openTaskCal(name);};
   document.getElementById('bmDel').onclick=()=>{
     close();
     showConfirm(`删除「${name}」？`,()=>{
