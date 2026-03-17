@@ -554,17 +554,17 @@ body.theme-night .timer-widget{background:var(--surface);}
 .cal-year-view.active{display:block;}
 .cal-month-view{display:block;}
 .cal-month-view.hidden{display:none;}
-.cal-year-container{max-width:400px;margin:0 auto;}
-.cal-year-block{margin-bottom:20px;padding:0 4px;}
-.cal-year-block-title{font-size:.8rem;font-weight:900;color:var(--text);margin-bottom:4px;padding:6px 8px;border-radius:8px;cursor:pointer;transition:background .18s,color .18s;display:inline-block;}
+.cal-year-container{max-width:480px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
+.cal-year-block{margin-bottom:12px;padding:0 2px;}
+.cal-year-block-title{font-size:.72rem;font-weight:900;color:var(--text);margin-bottom:2px;padding:4px 6px;border-radius:6px;cursor:pointer;transition:background .18s,color .18s;display:inline-block;}
 @media(hover:hover){.cal-year-block-title:hover{background:var(--done-lt);color:var(--done-dk);}}
-.cal-year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 2px;}
-.cal-year-dow{text-align:center;font-size:.5rem;font-weight:700;color:var(--text-lt);padding:1px 0;}
-.cal-year-day{height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:600;color:var(--text-lt);position:relative;}
+.cal-year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px 1px;}
+.cal-year-dow{text-align:center;font-size:.42rem;font-weight:700;color:var(--text-lt);padding:1px 0;}
+.cal-year-day{height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:600;color:var(--text-lt);position:relative;}
 .cal-year-day.empty-day{pointer-events:none;}
 .cal-year-day.today{background:var(--done-lt);color:var(--done-dk);font-weight:900;border-radius:5px;}
 .cal-year-day.has-data{color:var(--text);font-weight:800;background:var(--done-lt);border-radius:5px;}
-.cal-year-day.has-data::after{content:'';position:absolute;bottom:1px;width:4px;height:4px;border-radius:50%;background:var(--done);}
+.cal-year-day.has-data::after{content:'';position:absolute;bottom:1px;width:3px;height:3px;border-radius:50%;background:var(--done);}
 .cal-year-day.has-bingo::after{background:var(--amber-dk);}
 .cal-year-hint{text-align:center;font-size:.68rem;font-weight:700;color:var(--text-lt);margin-bottom:12px;}
 
