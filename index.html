@@ -4291,7 +4291,7 @@ function showLoginError(msg){
 }
 
 function skipLogin(){
-  currentUser=null;ls.set(K.user,'');
+  currentUser=null;ls.set(K.user,'__skipped__');
   closeLoginModal();
   updateUserBadge();
 }
@@ -4368,15 +4368,18 @@ function exportUnifiedData() {
 
 function exportUnifiedCopy() {
   const data = exportUnifiedData();
-  try {
-    navigator.clipboard.writeText(data).then(() => showToast('已复制结构化数据 ✓'));
-  } catch(e) {
+  function fallbackCopy(){
     const ta = document.createElement('textarea');
     ta.value = data; ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('已复制 ✓');
+    showToast('已复制结构化数据 ✓');
   }
+  try {
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(data).then(() => showToast('已复制结构化数据 ✓')).catch(fallbackCopy);
+    } else { fallbackCopy(); }
+  } catch(e) { fallbackCopy(); }
 }
 
 function importUnifiedData(jsonStr) {
@@ -4443,8 +4446,12 @@ function closeExportModal(){document.getElementById('exportModalOverlay').classL
 function exportCopy(){
   const ta=document.getElementById('exportTextarea');
   if(!ta.value)ta.value=exportAllData();
-  try{navigator.clipboard.writeText(ta.value).then(()=>showToast('已复制到剪贴板 ✓'));}
-  catch(e){ta.select();document.execCommand('copy');showToast('已复制 ✓');}
+  function fallback(){ta.select();document.execCommand('copy');showToast('已复制到剪贴板 ✓');}
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ta.value).then(()=>showToast('已复制到剪贴板 ✓')).catch(fallback);
+    } else { fallback(); }
+  } catch(e){fallback();}
 }
 
 function importData(){
