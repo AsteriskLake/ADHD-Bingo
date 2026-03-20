@@ -581,6 +581,18 @@ body.theme-night .timer-widget{background:var(--surface);}
 .cal-year-day.tcal-done{box-shadow:inset 0 0 0 1.5px var(--done);}
 .tcal-stats{text-align:center;font-size:.72rem;font-weight:700;color:var(--text-mid);margin-bottom:10px;}
 
+/* Tap count badge */
+.cell-badge{position:absolute;top:2px;right:4px;font-size:.62rem;font-weight:900;color:var(--amber-dk);z-index:1;line-height:1;pointer-events:none;letter-spacing:-.5px;}
+.cell.active .cell-badge{color:rgba(0,0,0,.38);}
+/* Detail tap count row */
+.tap-count-row{display:none;align-items:center;justify-content:space-between;background:var(--bg);border-radius:14px;padding:13px 16px;margin-bottom:10px;}
+.tap-count-row.show{display:flex;}
+.tap-count-label{font-size:.82rem;font-weight:700;color:var(--text);}
+.tap-count-right{display:flex;align-items:center;gap:10px;}
+.tap-count-val{font-size:.95rem;font-weight:900;color:var(--amber-dk);min-width:20px;text-align:center;}
+.tap-count-minus{width:28px;height:28px;border-radius:8px;border:none;background:rgba(231,76,60,.12);color:var(--red,#e74c3c);font-size:1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.tap-count-minus:active{background:var(--red,#e74c3c);color:#fff;}
+
 /* Subtask progress fill inside cell */
 .cell-progress-fill{position:absolute;bottom:0;left:0;width:100%;height:0%;background:var(--done);opacity:.35;transition:height .4s cubic-bezier(.4,0,.2,1);pointer-events:none;border-radius:0 0 9px 9px;}
 .cell.active .cell-progress-fill{display:none;}
@@ -899,6 +911,10 @@ body.theme-night .timer-widget{background:var(--surface);}
       <div><div class="detail-row-label">标记为完成</div></div>
       <label class="toggle-switch"><input type="checkbox" id="detailDoneToggle" onchange="toggleDetailTimeRow()"/><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
     </div>
+    <div class="tap-count-row" id="detailTapCountRow">
+      <div class="detail-row-label">今日完成次数</div>
+      <div class="tap-count-right"><span class="tap-count-val" id="detailTapCountVal">0</span><button class="tap-count-minus" onclick="detailTapMinus()" title="撤回一次">&minus;</button></div>
+    </div>
     <!-- Timer widget (shows when running) -->
     <div class="timer-widget" id="timerWidget">
       <div class="timer-display" id="timerDisplay">00:00</div>
@@ -1126,7 +1142,20 @@ const K={
 let gridSize=5;
 const totalCells=()=>gridSize*gridSize;
 let state=[];
+let tapCount=[];
 let order=[];
+
+const COMBO_MSG=[
+  '',
+  '',
+  '2x连击 - 小试牛刀',
+  '3x连击 - 渐入佳境',
+  '4x连击 - 势如破竹',
+  '5x连击 - 出神入化',
+  '6x连击 - 炉火纯青',
+  '7x连击 - 登峰造极',
+  '8x连击 - 前无古人!'
+];
 let prevLines=0;
 let prevRawLines=0;
 let details={};
@@ -1288,6 +1317,8 @@ function load(){
       touchedToday=true; // today already has a record — treat as touched
       const d=JSON.parse(s);
       if(Array.isArray(d.state))state=d.state;
+      if(Array.isArray(d.tapCount))tapCount=d.tapCount;
+      else tapCount=state.map(s=>s?1:0);
       if(Array.isArray(d.order))order=d.order;
       if(d.gridSize&&[3,4,5,6].includes(d.gridSize)){gridSize=d.gridSize;updateSizeBtns();}
       if(d.activeSnapshot) restoreActiveSnapshot(d.activeSnapshot);
@@ -1337,6 +1368,7 @@ function load(){
 
   // After all gridSize is finalised (including inheritance), validate state/order lengths
   if(state.length!==totalCells()){state=Array(totalCells()).fill(false);}
+  if(tapCount.length!==totalCells()){tapCount=state.map(s=>s?1:0);}
   if(order.length!==totalCells()){order=[...Array(totalCells()).keys()];}
 
   // Only check schedule overflow for today, and only if there's no saved record
@@ -1352,7 +1384,7 @@ function save(){
     const activeTasks2=getActiveTasks();
     const orderedTaskNames=order.map(idx=>idx<activeTasks2.length?activeTasks2[idx]:null).filter(Boolean);
     const key=activeKey();
-    ls.set(key,JSON.stringify({state,order,done,lines,pct,gridSize,activeSnapshot,orderedTaskNames,touched:true}));
+    ls.set(key,JSON.stringify({state,order,done,lines,pct,gridSize,activeSnapshot,orderedTaskNames,tapCount,touched:true}));
   }catch(e){}
 }
 // Call touch() before any real user action to mark today as having a record
@@ -2629,6 +2661,11 @@ function openDetail(pos){
   document.getElementById('detailSheetTitle').textContent='✏️ '+taskName;
   document.getElementById('detailNameInput').value=taskName;
   document.getElementById('detailDoneToggle').checked=state[pos];
+  // Tap count row
+  const tc=tapCount[pos]||0;
+  const tcRow=document.getElementById('detailTapCountRow');
+  tcRow.classList.toggle('show',tc>1);
+  document.getElementById('detailTapCountVal').textContent=tc;
   const idx=order[pos];
   document.getElementById('detailMandatoryToggle').checked=mandatory.has(idx);
   // Load TODAY's notes/todos (not shared across days)
@@ -2671,6 +2708,16 @@ function openDetail(pos){
   document.getElementById('detailStartTimeRow').style.display=hasStart?'flex':'none';
   document.getElementById('timerWidget').classList.remove('show');
   document.getElementById('detailOverlay').classList.add('open');document.getElementById('detailSheet').classList.add('open');
+}
+function detailTapMinus(){
+  if(detailPos<0)return;
+  const tc=tapCount[detailPos]||0;
+  if(tc<=1)return; // can't go below 1 while still done
+  tapCount[detailPos]=tc-1;
+  document.getElementById('detailTapCountVal').textContent=tapCount[detailPos];
+  if(tapCount[detailPos]<=1) document.getElementById('detailTapCountRow').classList.remove('show');
+  touch();save();buildGrid();
+  showToast('已撤回一次');
 }
 function toggleDetailTimeRow(){
   const done=document.getElementById('detailDoneToggle').checked;
@@ -2873,8 +2920,8 @@ function saveDetail(){
   }
   const isDone=document.getElementById('detailDoneToggle').checked,wasDone=state[detailPos];
   state[detailPos]=isDone;
-  if(isDone&&!wasDone)recordTS(newName);
-  if(!isDone&&wasDone)removeTS(newName);
+  if(isDone&&!wasDone){tapCount[detailPos]=1;recordTS(newName);}
+  if(!isDone&&wasDone){tapCount[detailPos]=0;removeTS(newName);}
   // Save start time (always, not just when done)
   const startTimeVal=document.getElementById('detailStartTimeInput').value;
   const startTimeVisible=document.getElementById('detailStartTimeRow').style.display!=='none';
@@ -3575,7 +3622,7 @@ function openSubtaskPopup(pos, taskName, todosInit){
     if(ov)ov.remove();
     if(complete){
       // Mark cell done
-      state[pos]=true;
+      state[pos]=true;tapCount[pos]=1;
       // Also update todos as all done in storage
       saveDetailDay(taskName,activeDate(),getDetailDay(taskName,activeDate()).notes||'',todos.map(t=>({...t,done:true})));
       touch();save();
@@ -3637,6 +3684,7 @@ function buildGrid(){
     // Subtask progress fill
     const fill=document.createElement('div');fill.className='cell-progress-fill';c.appendChild(fill);
     if(isMand&&!isEmpty){const li=document.createElement('span');li.className='lock-icon';li.textContent='⚡';c.appendChild(li);}
+    if(!isEmpty&&tapCount[pos]>1){const badge=document.createElement('span');badge.className='cell-badge';badge.textContent='\u00d7'+tapCount[pos];c.appendChild(badge);}
     if(!isEmpty){const dot=document.createElement('span');dot.className='note-dot'+(hasNoteOrTodo(taskName)?' show':'');c.appendChild(dot);}
     if(!isEmpty){
       c.addEventListener('mousedown',()=>startPress(pos,c));c.addEventListener('mouseup',()=>cancelPress(c));c.addEventListener('mouseleave',()=>cancelPress(c));
@@ -3680,24 +3728,37 @@ function fixCellSquare(){
 window.addEventListener('resize',fixCellSquare);
 
 function toggle(pos){
-  // If cell has todos and is not yet done, show subtask popup
   const taskName=getTaskName(pos);
-  if(!state[pos]&&taskName){
+  // Already done → combo tap (don't undo)
+  if(state[pos]){
+    tapCount[pos]=(tapCount[pos]||1)+1;
+    touch();save();
+    const c=document.querySelector(`.cell[data-i="${pos}"]`);
+    c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');
+    c.addEventListener('animationend',()=>c.classList.remove('pop'),{once:true});
+    vibrate(20);
+    const tc=tapCount[pos];
+    if(tc<COMBO_MSG.length) showToast(COMBO_MSG[tc]);
+    else showToast(tc+'x连击 - 前无古人!');
+    buildGrid();
+    return;
+  }
+  // If cell has todos and is not yet done, show subtask popup
+  if(taskName){
     const d=getDetail(taskName);
     if(d.todos&&d.todos.length>0){
       openSubtaskPopup(pos,taskName,d.todos);
       return;
     }
   }
-  state[pos]=!state[pos];touch();save();
+  state[pos]=true;tapCount[pos]=1;touch();save();
   const c=document.querySelector(`.cell[data-i="${pos}"]`);
-  c.classList.toggle('active',state[pos]);
-  if(!state[pos]){c.style.background=c.dataset.bg;c.style.color=c.dataset.fg;}else{c.style.background='';c.style.color='';}
+  c.classList.add('active');
+  c.style.background='';c.style.color='';
   c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');
   c.addEventListener('animationend',()=>c.classList.remove('pop'),{once:true});
   const col=pos%gridSize;
-  if(state[pos]){vibrate([30,60]);burstParticles(c);playComplete(col);showCheer();recordTS(getTaskName(pos));}
-  else{vibrate(20);playUndo(col);removeTS(getTaskName(pos));syncTimestampsToState();}
+  vibrate([30,60]);burstParticles(c);playComplete(col);showCheer();recordTS(taskName);
   render();buildGrid();checkAchievements();
 }
 
