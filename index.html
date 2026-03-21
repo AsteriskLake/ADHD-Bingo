@@ -592,6 +592,30 @@ body.theme-night .timer-widget{background:var(--surface);}
 .tap-count-val{font-size:.95rem;font-weight:900;color:var(--amber-dk);min-width:20px;text-align:center;}
 .tap-count-minus{width:28px;height:28px;border-radius:8px;border:none;background:rgba(231,76,60,.12);color:var(--red,#e74c3c);font-size:1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;}
 .tap-count-minus:active{background:var(--red,#e74c3c);color:#fff;}
+/* Combo popup */
+.combo-popup{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s;}
+.combo-popup.show{opacity:1;}
+.combo-popup.fade{opacity:0;}
+.combo-emoji{font-size:4rem;animation:comboBounce .5s cubic-bezier(.3,1.5,.6,1);}
+.combo-text{margin-top:6px;font-size:1.2rem;font-weight:900;color:var(--text);text-shadow:0 2px 12px rgba(0,0,0,.12);background:var(--surface);padding:8px 22px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1);}
+@keyframes comboBounce{0%{transform:scale(0) rotate(-15deg);}50%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);}}
+
+/* Group picker for random */
+.gpick-overlay{position:fixed;inset:0;z-index:2200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);}
+.gpick-card{background:var(--surface);border-radius:22px;width:calc(100% - 40px);max-width:380px;padding:22px 20px 18px;max-height:70vh;display:flex;flex-direction:column;}
+.gpick-title{font-size:.95rem;font-weight:900;color:var(--text);text-align:center;margin-bottom:4px;}
+.gpick-sub{font-size:.72rem;font-weight:600;color:var(--text-lt);text-align:center;margin-bottom:14px;}
+.gpick-list{overflow-y:auto;flex:1;margin-bottom:14px;}
+.gpick-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--bg);margin-bottom:8px;cursor:pointer;user-select:none;transition:background .15s;}
+.gpick-item.sel{background:var(--done-lt);}
+.gpick-check{width:22px;height:22px;border-radius:7px;border:2.5px solid var(--text-lt);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:all .15s;}
+.gpick-item.sel .gpick-check{background:var(--done);border-color:var(--done-dk);color:#fff;}
+.gpick-name{font-size:.88rem;font-weight:700;color:var(--text);flex:1;}
+.gpick-count{font-size:.72rem;font-weight:700;color:var(--text-lt);}
+.gpick-btns{display:flex;gap:8px;}
+.gpick-btn{flex:1;padding:13px;border-radius:14px;border:none;font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;transition:all .15s;}
+.gpick-btn-cancel{background:var(--bg);color:var(--text-mid);}
+.gpick-btn-ok{background:var(--done);color:#fff;}
 
 /* Subtask progress fill inside cell */
 .cell-progress-fill{position:absolute;bottom:0;left:0;width:100%;height:0%;background:var(--done);opacity:.35;transition:height .4s cubic-bezier(.4,0,.2,1);pointer-events:none;border-radius:0 0 9px 9px;}
@@ -739,6 +763,7 @@ body.theme-night .timer-widget{background:var(--surface);}
 <canvas id="confetti-canvas"></canvas>
 <canvas id="particle-canvas"></canvas>
 <div class="toast" id="toast"></div>
+<div class="combo-popup" id="comboPopup"><div class="combo-emoji" id="comboEmoji"></div><div class="combo-text" id="comboText"></div></div>
 <div class="locked-toast" id="lockedToast"></div>
 
 <!-- BINGO Celebration Modal -->
@@ -2476,28 +2501,54 @@ function toggleGroupSelect(gi){
   ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
 }
 function randomPickTasks(){
+  if(groups.length===0){showToast('还没有任务，先添加一些吧！');return;}
+  // If only 1 group, skip picker and go directly
+  if(groups.length===1){_doRandomPick(new Set([0]));return;}
+  // Show group picker
+  const ov=document.createElement('div');ov.className='gpick-overlay';
+  const sel=new Set(groups.map((_,i)=>i)); // all selected by default
+  function rebuild(){
+    ov.innerHTML='';
+    const card=document.createElement('div');card.className='gpick-card';
+    card.innerHTML=`<div class="gpick-title">🎲 选择参与随机的分组</div><div class="gpick-sub">取消勾选的分组不参与本次随机</div>`;
+    const list=document.createElement('div');list.className='gpick-list';
+    groups.forEach((g,gi)=>{
+      const item=document.createElement('div');item.className='gpick-item'+(sel.has(gi)?' sel':'');
+      const taskCount=g.tasks?g.tasks.length:0;
+      item.innerHTML=`<div class="gpick-check">${sel.has(gi)?'✓':''}</div><div class="gpick-name">${escHtml(g.name)}</div><div class="gpick-count">${taskCount} 个任务</div>`;
+      item.onclick=()=>{if(sel.has(gi))sel.delete(gi);else sel.add(gi);rebuild();};
+      list.appendChild(item);
+    });
+    card.appendChild(list);
+    const btns=document.createElement('div');btns.className='gpick-btns';
+    const cancel=document.createElement('button');cancel.className='gpick-btn gpick-btn-cancel';cancel.textContent='取消';cancel.onclick=()=>ov.remove();
+    const ok=document.createElement('button');ok.className='gpick-btn gpick-btn-ok';ok.textContent='开始随机';ok.onclick=()=>{ov.remove();if(sel.size===0){showToast('请至少选择一个分组');return;}_doRandomPick(sel);};
+    btns.appendChild(cancel);btns.appendChild(ok);card.appendChild(btns);
+    ov.appendChild(card);
+  }
+  rebuild();
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+function _doRandomPick(selectedGroups){
   const needed=totalCells();
-  // Find task names that are currently lit (checked on the grid)
   const litNames=new Set();
   for(let pos=0;pos<totalCells();pos++){if(state[pos]){const n=getTaskName(pos);if(n)litNames.add(n);}}
-  // Gather all tasks, split into locked (lit) and free pools
   const locked=[],free=[];
   for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++){
     const t=groups[gi].tasks[ti];
     if(litNames.has(t.name))locked.push({gi,ti});
-    else free.push({gi,ti});
+    else if(selectedGroups.has(gi))free.push({gi,ti});
   }
-  if(locked.length+free.length===0){showToast('还没有任务，先添加一些吧！');return;}
+  if(locked.length+free.length===0){showToast('选中的分组没有可用任务');return;}
   if(locked.length>=needed){
-    // All slots already filled by lit tasks — just keep them active, deactivate rest
     const lockedSet=new Set(locked.map(({gi,ti})=>`${gi}_${ti}`));
     for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++)groups[gi].tasks[ti].active=lockedSet.has(`${gi}_${ti}`);
     ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
-    showToast(`✨ 已点亮的格子全部保留`);return;
+    showToast('✨ 已点亮的格子全部保留');return;
   }
   const slotsLeft=needed-locked.length;
-  if(free.length<slotsLeft){showToast(`任务不足 ${needed} 个，请再添加一些`);return;}
-  // Shuffle free pool and pick what's needed
+  if(free.length<slotsLeft){showToast(`选中分组的任务不足 ${slotsLeft} 个，请多选几个分组或添加任务`);return;}
   for(let i=free.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[free[i],free[j]]=[free[j],free[i]];}
   const picked=new Set([...locked,...free.slice(0,slotsLeft)].map(({gi,ti})=>`${gi}_${ti}`));
   for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++)groups[gi].tasks[ti].active=picked.has(`${gi}_${ti}`);
@@ -2712,8 +2763,20 @@ function openDetail(pos){
 function detailTapMinus(){
   if(detailPos<0)return;
   const tc=tapCount[detailPos]||0;
-  if(tc<=1)return; // can't go below 1 while still done
+  if(tc<=0)return;
   tapCount[detailPos]=tc-1;
+  if(tapCount[detailPos]<=0){
+    // Fully cancel this cell
+    state[detailPos]=false;tapCount[detailPos]=0;
+    document.getElementById('detailDoneToggle').checked=false;
+    document.getElementById('detailTapCountRow').classList.remove('show');
+    document.getElementById('detailTimeRow').style.display='none';
+    const taskName=getTaskName(detailPos);
+    removeTS(taskName);syncTimestampsToState();
+    touch();save();render();buildGrid();
+    showToast('已取消完成');
+    return;
+  }
   document.getElementById('detailTapCountVal').textContent=tapCount[detailPos];
   if(tapCount[detailPos]<=1) document.getElementById('detailTapCountRow').classList.remove('show');
   touch();save();buildGrid();
@@ -3738,8 +3801,8 @@ function toggle(pos){
     c.addEventListener('animationend',()=>c.classList.remove('pop'),{once:true});
     vibrate(20);
     const tc=tapCount[pos];
-    if(tc<COMBO_MSG.length) showToast(COMBO_MSG[tc]);
-    else showToast(tc+'x连击 - 前无古人!');
+    const msg=tc<COMBO_MSG.length?COMBO_MSG[tc]:(tc+'x连击 - 前无古人!');
+    showCombo(tc,msg);
     buildGrid();
     return;
   }
@@ -4113,6 +4176,22 @@ function checkAchievements(){
 let tT=null,lT=null;
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2200);}
 function showLockedToast(m){const t=document.getElementById('lockedToast');t.textContent=m;t.classList.add('show');clearTimeout(lT);lT=setTimeout(()=>t.classList.remove('show'),2000);}
+
+const COMBO_EMOJI=['','','👏','🔥','⚡','🌟','💎','👑','🏆'];
+let _comboTimer=0;
+function showCombo(count,msg){
+  const el=document.getElementById('comboPopup');
+  const em=document.getElementById('comboEmoji');
+  const tx=document.getElementById('comboText');
+  const ei=Math.min(count,COMBO_EMOJI.length-1);
+  em.textContent=COMBO_EMOJI[ei]||'🏆';
+  tx.textContent=msg;
+  el.classList.remove('fade');el.classList.add('show');
+  // re-trigger bounce animation
+  em.style.animation='none';void em.offsetWidth;em.style.animation='';
+  clearTimeout(_comboTimer);
+  _comboTimer=setTimeout(()=>{el.classList.add('fade');setTimeout(()=>el.classList.remove('show','fade'),350);},1400);
+}
 
 // Custom confirm (replaces confirm() which is blocked in iOS PWA)
 function showBubbleMenu(gi,ti){
