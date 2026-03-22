@@ -2581,23 +2581,47 @@ function makeBubbleEl(gi,ti,task,gc){
 
 function toggleTaskActive(gi,ti){
   const t=groups[gi].tasks[ti];
-  t.active=!t.active;
-  ls.set(getUserKey('groups'),JSON.stringify(groups));
-  // Rebuild order/state to match new active task count
-  const activeTasks=getActiveTasks();
   const n=totalCells();
-  // Keep existing done-by-name mapping
+  // Snapshot: record task name at each grid position BEFORE toggle
+  const oldActive=getActiveTasks();
+  const posNames=[];
+  for(let pos=0;pos<n;pos++){const idx=order[pos];posNames.push(idx<oldActive.length?oldActive[idx]:null);}
+  // Record done status by name
   const doneNames=new Set();
   for(let pos=0;pos<state.length;pos++){if(state[pos]){const nm=getTaskName(pos);if(nm)doneNames.add(nm);}}
-  // Rebuild order: keep existing slots, add/remove as needed
-  const usedIdxs=new Set(order.filter(i=>i<activeTasks.length));
-  const newIdxs=[...Array(activeTasks.length).keys()].filter(i=>!usedIdxs.has(i));
-  let newOrder=order.filter(i=>i<activeTasks.length);
-  newOrder=[...newOrder,...newIdxs];
-  if(newOrder.length<n)while(newOrder.length<n)newOrder.push(newOrder.length);
+  // Toggle
+  t.active=!t.active;
+  ls.set(getUserKey('groups'),JSON.stringify(groups));
+  // Get new active tasks
+  const newActive=getActiveTasks();
+  const nameToIdx={};newActive.forEach((nm,i)=>nameToIdx[nm]=i);
+  // Stable rebuild: map old names to new indices, mark gaps
+  const newOrder=[];
+  const used=new Set();
+  for(let pos=0;pos<n;pos++){
+    const nm=posNames[pos];
+    if(nm&&nameToIdx[nm]!==undefined&&!used.has(nameToIdx[nm])){
+      newOrder.push(nameToIdx[nm]);used.add(nameToIdx[nm]);
+    } else {
+      newOrder.push(-1); // gap: needs replacement
+    }
+  }
+  // Fill gaps with unused active tasks (replacements)
+  const unused=[];
+  for(let i=0;i<newActive.length;i++){if(!used.has(i))unused.push(i);}
+  let ui=0;
+  for(let pos=0;pos<newOrder.length;pos++){
+    if(newOrder[pos]===-1&&ui<unused.length){newOrder[pos]=unused[ui];used.add(unused[ui]);ui++;}
+  }
+  // If still gaps (no replacements available), pad with any index
+  for(let pos=0;pos<newOrder.length;pos++){
+    if(newOrder[pos]===-1){for(let i=0;i<newActive.length;i++){if(!used.has(i)){newOrder[pos]=i;used.add(i);break;}}}
+  }
+  while(newOrder.length<n){if(ui<unused.length){newOrder.push(unused[ui++]);}else newOrder.push(newOrder.length);}
   order=ensureScheduledInGrid(newOrder,activeDate());
+  // Rebuild state by name
   state=Array(n).fill(false);
-  for(let pos=0;pos<n;pos++){const idx=order[pos];if(idx<activeTasks.length&&doneNames.has(activeTasks[idx]))state[pos]=true;}
+  for(let pos=0;pos<n;pos++){const idx=order[pos];if(idx<newActive.length&&doneNames.has(newActive[idx]))state[pos]=true;}
   touch();save();renderTaskPanel();buildGrid();render();
 }
 function bubbleDelete(gi,ti){
