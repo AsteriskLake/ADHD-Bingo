@@ -2653,9 +2653,11 @@ function _doRandomPick(selectedGroups){
   for(let pos=0;pos<totalCells();pos++){if(state[pos]){const n=getTaskName(pos);if(n)litNames.add(n);}}
   const schedLock=getScheduledNamesForDate(activeDate());
   const locked=[],free=[];
+  const today=activeDate();
   for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++){
     const t=groups[gi].tasks[ti];
     if(litNames.has(t.name)||schedLock.has(t.name))locked.push({gi,ti});
+    else if(taskHasSchedule(t)&&!taskActiveOnDate(t,today)) continue; // not for today, skip entirely
     else if(selectedGroups.has(gi))free.push({gi,ti});
   }
   if(locked.length+free.length===0){showToast('选中的分组没有可用任务');return;}
