@@ -2662,7 +2662,8 @@ function _doRandomPick(selectedGroups){
   if(locked.length>=needed){
     const lockedSet=new Set(locked.map(({gi,ti})=>`${gi}_${ti}`));
     for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++)groups[gi].tasks[ti].active=lockedSet.has(`${gi}_${ti}`);
-    ls.set(getUserKey('groups'),JSON.stringify(groups));renderTaskPanel();
+    ls.set(getUserKey('groups'),JSON.stringify(groups));
+    _applyRandomToGrid(litNames);
     showToast('✨ 已点亮的格子全部保留');return;
   }
   const slotsLeft=needed-locked.length;
@@ -2671,9 +2672,32 @@ function _doRandomPick(selectedGroups){
   const picked=new Set([...locked,...free.slice(0,slotsLeft)].map(({gi,ti})=>`${gi}_${ti}`));
   for(let gi=0;gi<groups.length;gi++)for(let ti=0;ti<groups[gi].tasks.length;ti++)groups[gi].tasks[ti].active=picked.has(`${gi}_${ti}`);
   ls.set(getUserKey('groups'),JSON.stringify(groups));
-  renderTaskPanel();
   const lockedCount=locked.length;
+  _applyRandomToGrid(litNames);
   showToast(lockedCount>0?`🎲 随机补充 ${slotsLeft} 个，保留 ${lockedCount} 个已锁定`:`🎲 已随机选出 ${needed} 个任务`);
+}
+// After random changes active flags, rebuild order/state and refresh grid
+function _applyRandomToGrid(doneNames){
+  const activeTasks=getActiveTasks();
+  const nameToIdx={};activeTasks.forEach((n,i)=>nameToIdx[n]=i);
+  const used=new Set();
+  const newOrder=[];
+  // Keep existing order positions that still map to valid active tasks
+  for(const idx of order){
+    if(idx<activeTasks.length&&!used.has(idx)){newOrder.push(idx);used.add(idx);}
+  }
+  // Append any new active task indices not yet in order
+  for(let i=0;i<activeTasks.length;i++){if(!used.has(i)){newOrder.push(i);used.add(i);}}
+  while(newOrder.length<totalCells())newOrder.push(newOrder.length);
+  order=ensureScheduledInGrid(newOrder,activeDate());
+  // Rebuild state preserving done tasks by name
+  state=Array(totalCells()).fill(false);
+  tapCount=Array(totalCells()).fill(0);
+  for(let pos=0;pos<totalCells();pos++){
+    const idx=order[pos];
+    if(idx<activeTasks.length&&doneNames.has(activeTasks[idx])){state[pos]=true;tapCount[pos]=1;}
+  }
+  prevLines=0;touch();save();closeTaskPanel();buildGrid();render();
 }
 function renameGroup(gi,v){if(v.trim())groups[gi].name=v.trim();ls.set(getUserKey('groups'),JSON.stringify(groups));}
 function renameTask(gi,ti,v){if(v.trim())groups[gi].tasks[ti].name=v.trim();ls.set(getUserKey('groups'),JSON.stringify(groups));}
