@@ -321,7 +321,9 @@ body{background:var(--bg);font-family:"Nunito","Noto Sans SC",sans-serif;min-hei
 .group-order-menu-item{padding:8px 14px;font-size:.8rem;font-weight:800;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .12s;}
 .group-order-menu-item:hover{background:var(--purple-lt);}
 .group-order-menu-item.current{color:var(--purple);font-weight:900;}
-.group-name-input{flex:1;font-size:.95rem;font-weight:900;color:var(--text);background:transparent;border:none;outline:none;font-family:"Nunito","Noto Sans SC",sans-serif;-webkit-appearance:none;}
+.group-name-input{flex:1;font-size:.95rem;font-weight:900;color:var(--text);background:transparent;border:none;outline:none;font-family:"Nunito","Noto Sans SC",sans-serif;-webkit-appearance:none;min-width:0;}
+.group-collapse-count{font-size:.68rem;font-weight:600;white-space:nowrap;flex-shrink:0;}
+.group-arrow{transition:transform .2s;display:inline-block;}
 .group-name-input:focus{background:var(--purple-lt);border-radius:6px;padding:1px 4px;}
 .group-controls{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .group-sel-all{padding:3px 8px;border-radius:6px;border:none;font-size:.68rem;font-weight:800;cursor:pointer;background:var(--done-lt);color:var(--done-dk);transition:all .18s;}
@@ -1063,7 +1065,7 @@ body.theme-night .timer-widget{background:var(--surface);}
     <button class="btn-icon" onclick="doShuffle()" title="随机">🔀</button>
     <button class="btn-icon" onclick="doReset()" title="重置">🗑️</button>
     <button class="btn-icon" onclick="toggleTheme()" id="themeBtn" title="主题">🎨</button>
-    <button class="btn-icon" onclick="openDayOffsetPicker()" title="日期切换时间">⚙️</button>
+    <button class="btn-icon" onclick="openDayOffsetPicker()" title="每日刷新时间">⚙️</button>
   </div>
 </div>
 
@@ -1205,6 +1207,7 @@ let detailPos=-1;
 let appName='Life Bingo';
 let timestamps={};
 let currentUser=null; // {username, passwordHash}
+let collapsedGroups=new Set(); // indices of collapsed groups in task panel
 
 // viewingDate: null = today, else 'YYYY-MM-DD'
 let viewingDate=null;
@@ -1506,6 +1509,7 @@ function loadAll(){
   // K.size is no longer used to set gridSize on startup.
   // gridSize is now determined solely by the daily record in load().
   try{const s=ls.get(getUserKey('achievements'));if(s){const d=JSON.parse(s);achUnlocked=new Set(d.unlocked||[]);achCustom=d.custom||{};achUserDefined=d.userDefined||[];}}catch(e){}
+  try{const s=ls.get(getUserKey('collapsedGroups'));if(s)collapsedGroups=new Set(JSON.parse(s));}catch(e){}
 }
 
 // User-specific save keys
@@ -1965,7 +1969,7 @@ function openDayOffsetPicker(){
   function rebuild(){
     ov.innerHTML='';
     const card=document.createElement('div');card.className='doff-card';
-    card.innerHTML=`<div class="doff-title">日期切换时间</div><div class="doff-sub">设置每天几点切换到新的一天<br>过了零点还想打卡？把时间调晚一些</div>`;
+    card.innerHTML=`<div class="doff-title">每日刷新时间</div><div class="doff-sub">设置每天几点切换到新的一天<br>过了零点还想打卡？把时间调晚一些</div>`;
     const opts=document.createElement('div');opts.className='doff-options';
     OPTIONS.forEach(o=>{
       const btn=document.createElement('button');btn.className='doff-opt'+(dayOffset===o.v?' sel':'');
@@ -2143,10 +2147,14 @@ function renderTaskPanel(){
     // Count active in group
     const grpActive=grp.tasks.filter(t=>t.active).length;
     const allSel=grpActive===grp.tasks.length;
+    const isCollapsed=collapsedGroups.has(gi);
     const orderBtn=groups.length>1?`<button class="group-order-btn" style="color:${gc.fg}" onclick="pickGroupOrder(${gi},this)" title="调整分组顺序">${gi+1}</button>`:'';
-    gh.innerHTML=`${orderBtn}<span style="color:${gc.border};font-size:.85rem">▸</span><input class="group-name-input" value="${escHtml(grp.name)}" maxlength="20" autocomplete="off" style="color:${gc.fg}" onchange="renameGroup(${gi},this.value)" onblur="renameGroup(${gi},this.value)"/><div class="group-controls"><button class="group-sel-all" onclick="toggleGroupSelect(${gi})" style="background:${allSel?gc.border:'transparent'};color:${allSel?'#fff':gc.fg};border:1.5px solid ${gc.border}">${allSel?'取消':'全选'}</button>${groups.length>1?`<button class="group-del-btn" onclick="deleteGroup(${gi})">✕</button>`:''}</div>`;
+    const arrow=isCollapsed?'▸':'▾';
+    const countTag=isCollapsed?`<span class="group-collapse-count" style="color:${gc.border}">${grp.tasks.length}个任务 · 已选${grpActive}个</span>`:'';
+    gh.innerHTML=`${orderBtn}<span class="group-arrow" style="color:${gc.border};font-size:.85rem;cursor:pointer;user-select:none;" onclick="toggleGroupCollapse(${gi})">${arrow}</span><input class="group-name-input" value="${escHtml(grp.name)}" maxlength="20" autocomplete="off" style="color:${gc.fg}" onchange="renameGroup(${gi},this.value)" onblur="renameGroup(${gi},this.value)"/>${countTag}<div class="group-controls"><button class="group-sel-all" onclick="toggleGroupSelect(${gi})" style="background:${allSel?gc.border:'transparent'};color:${allSel?'#fff':gc.fg};border:1.5px solid ${gc.border}">${allSel?'取消':'全选'}</button>${groups.length>1?`<button class="group-del-btn" onclick="deleteGroup(${gi})">✕</button>`:''}</div>`;
     body.appendChild(gh);
     const wrap=document.createElement('div');wrap.className='task-bubble-wrap';wrap.dataset.group=gi;
+    if(isCollapsed){wrap.style.display='none';}
     const dragHint=document.createElement('div');
     dragHint.className='group-drag-hint';
     dragHint.textContent='可将任务拖到此处';
@@ -2170,11 +2178,18 @@ function renderTaskPanel(){
     grp.tasks.forEach((task,ti)=>wrap.appendChild(makeBubbleEl(gi,ti,task,gc)));
     body.appendChild(wrap);
     const addRow=document.createElement('div');addRow.className='task-add-row';
+    if(isCollapsed){addRow.style.display='none';}
     addRow.innerHTML=`<input class="task-add-input" placeholder="添加任务…" maxlength="10" autocomplete="off" onkeydown="if(event.key==='Enter')addTaskToGroup(${gi},this)"/><button class="task-add-btn" onclick="addTaskToGroup(${gi},this.previousElementSibling)" style="background:${gc.border}">+</button>`;
     body.appendChild(addRow);
   });
   const agb=document.createElement('button');agb.className='add-group-btn';agb.onclick=addGroup;agb.innerHTML='＋ 新建分组';
   body.appendChild(agb);
+}
+
+function toggleGroupCollapse(gi){
+  if(collapsedGroups.has(gi))collapsedGroups.delete(gi);else collapsedGroups.add(gi);
+  ls.set(getUserKey('collapsedGroups'),JSON.stringify([...collapsedGroups]));
+  renderTaskPanel();
 }
 
 // ── Group drag: reorder groups by dragging the ≡ handle ──────────────────────
