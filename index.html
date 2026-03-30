@@ -1192,7 +1192,7 @@ const K={
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let dayOffset=0; // hours past midnight that still counts as "today" (0-6)
+let dayOffset=0; // hours offset from midnight for day boundary (-2 to 6)
 let gridSize=5;
 const totalCells=()=>gridSize*gridSize;
 let state=[];
@@ -1464,7 +1464,7 @@ function restoreActiveSnapshot(activeSnapshot){
 }
 function loadAll(){
   // Load day offset FIRST (before any todayStr() call)
-  try{const v=parseInt(ls.get(K.dayOff));if(v>=0&&v<=6)dayOffset=v;}catch(e){}
+  try{const v=parseInt(ls.get(K.dayOff));if(v>=-2&&v<=6)dayOffset=v;}catch(e){}
   runMigration();
   // Load user
   try{const s=ls.get(K.user);if(s){currentUser=JSON.parse(s);updateUserBadge();}}catch(e){}
@@ -1969,6 +1969,8 @@ function toggleTheme(){
 function openDayOffsetPicker(){
   const ov=document.createElement('div');ov.className='doff-overlay';
   const OPTIONS=[
+    {v:-2,label:'22:00',desc:'(提前)'},
+    {v:-1,label:'23:00',desc:'(提前)'},
     {v:0, label:'0:00',desc:'(默认)'},
     {v:1, label:'1:00',desc:''},
     {v:2, label:'2:00',desc:''},
@@ -1980,7 +1982,7 @@ function openDayOffsetPicker(){
   function rebuild(){
     ov.innerHTML='';
     const card=document.createElement('div');card.className='doff-card';
-    card.innerHTML=`<div class="doff-title">每日刷新时间</div><div class="doff-sub">设置每天几点切换到新的一天<br>过了零点还想打卡？把时间调晚一些</div>`;
+    card.innerHTML=`<div class="doff-title">每日刷新时间</div><div class="doff-sub">设置每天几点切换到新的一天<br>过了零点还想打卡？调晚一些<br>提前规划明天？调到22或23点</div>`;
     const opts=document.createElement('div');opts.className='doff-options';
     OPTIONS.forEach(o=>{
       const btn=document.createElement('button');btn.className='doff-opt'+(dayOffset===o.v?' sel':'');
