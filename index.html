@@ -4602,7 +4602,48 @@ function doLogin(){
   let stored=ls.get(accountKey);
   // Fallback: try cookie if localStorage missing
   if(!stored)stored=ck.get(accountKey);
-  if(!stored){showLoginError('此设备上找不到该账号——账号仅存本地，换设备或浏览器后需重新注册');return;}
+  if(!stored){
+    // Check if user data keys exist even though account key is lost
+    const userPfx=KP+'u_'+user+'_';
+    let hasData=false;
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith(userPfx)){hasData=true;break;}
+    }
+    if(hasData){
+      // Account key lost but data exists — offer to recover
+      showLoginError('账号凭证丢失，但检测到「'+user+'」的打卡数据仍在本设备上。');
+      // Show recover button
+      let recoverBtn=document.getElementById('loginRecoverBtn');
+      if(!recoverBtn){
+        recoverBtn=document.createElement('button');
+        recoverBtn.id='loginRecoverBtn';
+        recoverBtn.style.cssText='display:block;margin:8px auto 0;padding:8px 20px;background:#07C160;color:#fff;border:none;border-radius:99px;font-size:.78rem;font-weight:700;cursor:pointer;';
+        recoverBtn.textContent='重新设置密码并恢复数据';
+        const errEl=document.getElementById('loginErr');
+        if(errEl)errEl.after(recoverBtn);
+      }
+      recoverBtn.onclick=function(){
+        // Re-create account with the password user just entered, preserving all data
+        const accountData=JSON.stringify({hash:simpleHash(pass)});
+        ls.set(KP+'account_'+user,accountData);
+        ck.set(KP+'account_'+user,accountData);
+        currentUser={username:user};
+        ls.set(K.user,JSON.stringify(currentUser));
+        const recovered=recoverAnonData(user);
+        closeLoginModal();
+        loadAll();load();buildGrid();render();
+        updateUserBadge();
+        showToast('账号已恢复，欢迎回来 '+user+'！');
+        checkOtherAccounts(user);
+      };
+    } else {
+      showLoginError('此设备上找不到该账号——账号仅存本地，换设备或浏览器后需重新注册');
+      const oldBtn=document.getElementById('loginRecoverBtn');
+      if(oldBtn)oldBtn.remove();
+    }
+    return;
+  }
   // Restore to localStorage if it was missing
   try{localStorage.setItem(accountKey,stored);}catch(e){}
   const acc=JSON.parse(stored);
