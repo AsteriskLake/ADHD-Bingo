@@ -4595,10 +4595,122 @@ function doLogin(){
   ls.set(K.user,JSON.stringify(currentUser));
   // Also back up account info to cookie so it survives localStorage wipes
   ck.set(accountKey,stored);
+  // Recover any data that was saved under anonymous keys while logged out
+  const recovered=recoverAnonData(user);
   closeLoginModal();
   loadAll();load();buildGrid();render();
   updateUserBadge();
-  showToast(`欢迎回来，${user} 👋`);
+  showToast(recovered?`欢迎回来，${user}！已恢复离线数据 👋`:`欢迎回来，${user} 👋`);
+  checkOtherAccounts(user);
+}
+
+// ── Recover anonymous data into user account after login ────────────────────
+function recoverAnonData(username){
+  const userPfx=KP+'u_'+username+'_';
+  const anonPfx=KP;
+  const dateRe=/^\d{4}-\d{2}-\d{2}$/;
+  let recoveredDays=0;
+  let recoveredOther=false;
+
+  // 1. Recover daily state keys (adhd_bingo_YYYY-MM-DD → adhd_bingo_u_USER_YYYY-MM-DD)
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key||!key.startsWith(anonPfx))continue;
+    // Skip keys that already have user prefix, account keys, or non-date keys
+    if(key.startsWith(anonPfx+'u_'))continue;
+    if(key.startsWith(anonPfx+'account_'))continue;
+    const suffix=key.slice(anonPfx.length);
+    if(!dateRe.test(suffix))continue;
+    // This is an anonymous daily record: adhd_bingo_YYYY-MM-DD
+    const userKey=userPfx+suffix;
+    const anonVal=localStorage.getItem(key);
+    if(!anonVal)continue;
+    const userVal=localStorage.getItem(userKey);
+    if(!userVal){
+      // User has no data for this day — adopt the anonymous record
+      try{localStorage.setItem(userKey,anonVal);}catch(e){}
+      recoveredDays++;
+    } else {
+      // Both exist: keep whichever has more done tasks
+      try{
+        const anonD=JSON.parse(anonVal), userD=JSON.parse(userVal);
+        if((anonD.done||0)>(userD.done||0)){
+          localStorage.setItem(userKey,anonVal);
+          recoveredDays++;
+        }
+      }catch(e){}
+    }
+  }
+
+  // 2. Recover non-date keys (groups, details, mandatory, timestamps, achievements)
+  const otherKeys=['groups','details','mandatory','timestamps','achievements','collapsedGroups'];
+  for(const base of otherKeys){
+    const anonKey=anonPfx+base;
+    const userKey=userPfx+base;
+    const anonVal=localStorage.getItem(anonKey);
+    if(!anonVal)continue;
+    const userVal=localStorage.getItem(userKey);
+    if(!userVal){
+      // User has no value — adopt anonymous
+      try{localStorage.setItem(userKey,anonVal);}catch(e){}
+      recoveredOther=true;
+    }
+    // If user already has this key, keep the user's version (don't overwrite)
+  }
+
+  if(recoveredDays>0||recoveredOther){
+    showToast(`已恢复 ${recoveredDays} 天的打卡记录`);
+  }
+  return recoveredDays>0||recoveredOther;
+}
+
+// ── Detect and offer to import data from other user accounts ────────────────
+function checkOtherAccounts(currentUsername){
+  const dateRe=/^\d{4}-\d{2}-\d{2}$/;
+  const currentPfx=KP+'u_'+currentUsername+'_';
+  // Find all user prefixes in localStorage
+  const userPrefixes=new Map(); // username -> count of daily keys
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key||!key.startsWith(KP+'u_'))continue;
+    const rest=key.slice((KP+'u_').length);
+    const uEnd=rest.indexOf('_');
+    if(uEnd<0)continue;
+    const uname=rest.slice(0,uEnd);
+    if(uname===currentUsername)continue;
+    const suffix=rest.slice(uEnd+1);
+    if(dateRe.test(suffix)){
+      userPrefixes.set(uname,(userPrefixes.get(uname)||0)+1);
+    }
+  }
+  if(userPrefixes.size===0)return;
+  // Build list of other accounts with data
+  const accounts=[...userPrefixes.entries()].sort((a,b)=>b[1]-a[1]);
+  const names=accounts.map(([u,c])=>`${u}（${c}天记录）`).join('\n');
+  setTimeout(()=>{
+    if(confirm(`检测到本设备上还有以下账户的打卡数据：\n\n${names}\n\n是否要把这些历史数据导入到当前账户「${currentUsername}」？\n（只导入当前账户没有的日期记录，不会覆盖已有数据）`)){
+      let imported=0;
+      for(const [uname] of accounts){
+        const srcPfx=KP+'u_'+uname+'_';
+        for(let i=0;i<localStorage.length;i++){
+          const key=localStorage.key(i);
+          if(!key||!key.startsWith(srcPfx))continue;
+          const suffix=key.slice(srcPfx.length);
+          if(!dateRe.test(suffix))continue;
+          const destKey=currentPfx+suffix;
+          if(!localStorage.getItem(destKey)){
+            try{localStorage.setItem(destKey,localStorage.getItem(key));imported++;}catch(e){}
+          }
+        }
+      }
+      if(imported>0){
+        loadAll();load();buildGrid();render();
+        showToast(`已导入 ${imported} 天的历史记录`);
+      } else {
+        showToast('没有需要导入的新数据');
+      }
+    }
+  },800);
 }
 
 function doRegister(){
@@ -4614,9 +4726,13 @@ function doRegister(){
   ck.set(KP+'account_'+user,accountData);
   currentUser={username:user};
   ls.set(K.user,JSON.stringify(currentUser));
+  // Migrate any anonymous data into the new account
+  const recovered=recoverAnonData(user);
   closeLoginModal();
+  loadAll();load();buildGrid();render();
   updateUserBadge();
-  showToast(`注册成功，欢迎 ${user}！🎉`);
+  showToast(recovered?`注册成功！已导入之前的数据 🎉`:`注册成功，欢迎 ${user}！🎉`);
+  checkOtherAccounts(user);
 }
 
 function showLoginError(msg){
@@ -4637,7 +4753,11 @@ function openLoginModal(){
     if(confirm(`当前用户：${currentUser.username}\n确定要退出登录吗？`)){
       currentUser=null;ls.set(K.user,'');
       updateUserBadge();
+      // Reload data with no-user keys so the UI reflects logged-out state
+      loadAll();load();buildGrid();render();renderTaskPanel();
       showToast('已退出登录');
+      // Show login modal so user can log back in immediately
+      setTimeout(()=>document.getElementById('loginOverlay').style.display='flex',600);
     }
     return;
   }
