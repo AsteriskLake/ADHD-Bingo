@@ -1189,10 +1189,12 @@ const K={
   ver:    KP+'version',
   ach:    KP+'achievements',
   dayOff: KP+'dayOffset',
+  combo:  KP+'comboMode',
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let dayOffset=0; // hours offset from midnight for day boundary (-2 to 6)
+let comboMode=true; // combo tap mode: true=tap again for combo, false=confirm undo
 let gridSize=5;
 const totalCells=()=>gridSize*gridSize;
 let state=[];
@@ -1465,6 +1467,8 @@ function restoreActiveSnapshot(activeSnapshot){
 function loadAll(){
   // Load day offset FIRST (before any todayStr() call)
   try{const v=parseInt(ls.get(K.dayOff));if(v>=-2&&v<=6)dayOffset=v;}catch(e){}
+  // Load combo mode setting
+  try{const c=ls.get(K.combo);if(c!==null)comboMode=c!=='0';}catch(e){}
   runMigration();
   // Load user
   try{const s=ls.get(K.user);if(s){currentUser=JSON.parse(s);updateUserBadge();}}catch(e){}
@@ -1999,6 +2003,19 @@ function openDayOffsetPicker(){
       opts.appendChild(btn);
     });
     card.appendChild(opts);
+    // ── Combo mode toggle ──
+    const comboSection=document.createElement('div');
+    comboSection.style.cssText='margin-top:18px;padding-top:16px;border-top:1.5px solid var(--bg);margin-bottom:18px;';
+    comboSection.innerHTML=`<div class="doff-title">连击模式</div><div class="doff-sub">开启后点击已完成格子触发连击效果<br>关闭后点击已完成格子会提示是否取消完成</div>`;
+    const comboToggle=document.createElement('div');
+    comboToggle.style.cssText='display:flex;gap:8px;justify-content:center;';
+    const btnOn=document.createElement('button');btnOn.className='doff-opt'+(comboMode?' sel':'');
+    btnOn.textContent='开启';btnOn.onclick=()=>{comboMode=true;ls.set(K.combo,'1');rebuild();showToast('连击模式已开启');};
+    const btnOff=document.createElement('button');btnOff.className='doff-opt'+(!comboMode?' sel':'');
+    btnOff.textContent='关闭';btnOff.onclick=()=>{comboMode=false;ls.set(K.combo,'0');rebuild();showToast('连击模式已关闭');};
+    comboToggle.appendChild(btnOn);comboToggle.appendChild(btnOff);
+    comboSection.appendChild(comboToggle);
+    card.appendChild(comboSection);
     const close=document.createElement('button');close.className='doff-close';close.textContent='完成';close.onclick=()=>ov.remove();
     card.appendChild(close);
     ov.appendChild(card);
@@ -4000,18 +4017,28 @@ window.addEventListener('resize',fixCellSquare);
 
 function toggle(pos){
   const taskName=getTaskName(pos);
-  // Already done → combo tap (don't undo)
+  // Already done
   if(state[pos]){
-    tapCount[pos]=(tapCount[pos]||1)+1;
-    touch();save();
-    const c=document.querySelector(`.cell[data-i="${pos}"]`);
-    c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');
-    c.addEventListener('animationend',()=>c.classList.remove('pop'),{once:true});
-    vibrate(20);
-    const tc=tapCount[pos];
-    const msg=tc<COMBO_MSG.length?COMBO_MSG[tc]:(tc+'x连击 - 前无古人!');
-    showCombo(tc,msg);
-    buildGrid();
+    if(comboMode){
+      // Combo tap mode: don't undo, show combo
+      tapCount[pos]=(tapCount[pos]||1)+1;
+      touch();save();
+      const c=document.querySelector(`.cell[data-i="${pos}"]`);
+      c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');
+      c.addEventListener('animationend',()=>c.classList.remove('pop'),{once:true});
+      vibrate(20);
+      const tc=tapCount[pos];
+      const msg=tc<COMBO_MSG.length?COMBO_MSG[tc]:(tc+'x连击 - 前无古人!');
+      showCombo(tc,msg);
+      buildGrid();
+    } else {
+      // Non-combo mode: confirm undo
+      const name=getTaskName(pos)||'该任务';
+      showConfirm(`取消完成「${name}」？`,()=>{
+        state[pos]=false;tapCount[pos]=0;touch();save();
+        render();buildGrid();checkAchievements();
+      });
+    }
     return;
   }
   // If cell has todos and is not yet done, show subtask popup
